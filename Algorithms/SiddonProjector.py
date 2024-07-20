@@ -19,7 +19,7 @@ class SiddonProjector:
         self.voxel_size_mm = np.array(voxel_size_mm)
         self._voxel_nb = np.rint(
             self.image_matrix_size_mm / self.voxel_size_mm
-        ).astype(np.int)
+        ).astype(int)
         # Coordinates of the planes representing the grid
         # equation 3 of the paper
         # For sake of simplicity the center of the TR center is assumed to be
