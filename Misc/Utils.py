@@ -40,8 +40,30 @@ def RotatePointAlongZ(p, angle):
     r["z"] = p["z"]
     return r
 
+def RotatePointAlongY(p, angle):
+    """!@brief 
+    Rotate a rec-array of point_dtype along Y axis
+    """
+    angle_rad = -np.deg2rad(angle)
+    shape_0 = max(p.shape[0], angle.shape[0])
+    r = np.zeros(shape_0, dtype=point_dtype)
+    r["z"] = np.cos(angle_rad) * p["z"] - np.sin(angle_rad) * p["x"]
+    r["x"] = np.sin(angle_rad) * p["z"] + np.cos(angle_rad) * p["x"]
+    r["y"] = p["y"]
+    return r
 
-
+def RotatePointAlongX(p, angle):
+    """!@brief 
+    #DEVO CAMBIARE Z, X, Y 
+    Rotate a rec-array of point_dtype along X axis
+    """
+    angle_rad = np.deg2rad(angle)
+    shape_0 = max(p.shape[0], angle.shape[0])
+    r = np.zeros(shape_0, dtype=point_dtype)
+    r["y"] = np.cos(angle_rad) * p["y"] - np.sin(angle_rad) * p["z"]
+    r["z"] = np.sin(angle_rad) * p["y"] + np.cos(angle_rad) * p["z"]
+    r["x"] = p["x"]
+    return r   
 
 
 def ReadImage(filename):
