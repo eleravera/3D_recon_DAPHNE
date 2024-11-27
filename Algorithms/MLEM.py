@@ -13,6 +13,7 @@ class MLEM(IterativeReconstruction):
         super().__init__()
         self._name = "MLEM"
 
+    
     def PerfomSingleIteration(self):
         """!@brief 
             Implements the update rule for MLEM

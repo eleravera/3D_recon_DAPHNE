@@ -3,7 +3,7 @@ from Algorithms.SiddonProjector import SiddonProjector
 import sys
 import time
 from Misc.DataTypes import voxel_dtype, projection_dtype
-from Misc.Utils import Pickle
+from Misc.Utils import Pickle, SaveMatrix
 
 projector_debug_msg =0
 
@@ -103,6 +103,10 @@ class IterativeReconstruction:
        
         try:
             TOR = self.ComputeTOR(tor_id)
+            #outputFile = '/home/eleonora/TOR_forward.txt'
+            #np.savetxt(outputFile, TOR,fmt='%.2f')
+            #print('TOR foreward: ', TOR)
+
             return np.sum(img[TOR["vx"], TOR["vy"], TOR["vz"]] * TOR["prob"])
         except:
             if projector_debug_msg:
@@ -111,8 +115,10 @@ class IterativeReconstruction:
                 p1 = self._experimental_setup._projections_extrema["p1"][tor_id]
                 print("forward-proj out of bounds",p0, p1)
             return 0
+
+    
     def BackProjectionSingleTOR(self, img, vec, tor_id):
-        """!@brief
+        """!@briefBackProjectionSingleTOR
             Perform the back-projection of the tor_id-th TOR weighted using vec and save it on the image img 
             @param img: output image 
             @param vec: 
@@ -121,6 +127,9 @@ class IterativeReconstruction:
         try:   
             TOR = self.ComputeTOR(tor_id)
             img[TOR["vx"], TOR["vy"], TOR["vz"]] += vec * TOR["prob"]
+            #print('TOR back: ', TOR)
+            #outputFile = '/home/eleonora/TORback.txt'
+            #np.savetxt(outputFile, TOR,fmt='%.2f')
         except:
             if projector_debug_msg:
                 p0 = self._experimental_setup._projections_extrema["p0"][tor_id]
@@ -182,16 +191,17 @@ class IterativeReconstruction:
             start = time.time()
             # this method must be reimplemented in the base class
             self.PerfomSingleIteration()
-            outputfilename = self._output_file_name + "_iter_" + str(i + 1)
-            self.SaveImageToDisk(outputfilename)
+            self.SaveImageToDisk(self._output_file_name , iteration=i)
             end = time.time()
             print("iteration {0:d} => time: {1:.1f} s".format(i + 1, end - start))
         print("Done")
         return self._image
 
-    def SaveImageToDisk(self, output_file_name):
+    def SaveImageToDisk(self, output_file_name, iteration=0):
         """!@brief
             Save the image to file as a np object
         """
         if self._save_img_to_disk:
-            Pickle(self._image, output_file_name, ".rec")
+            #Pickle(self._image, output_file_name, ".rec")
+            SaveMatrix(self._image, output_file_name, key='iter'+str(iteration))
+                

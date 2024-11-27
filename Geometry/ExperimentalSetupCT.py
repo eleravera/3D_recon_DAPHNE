@@ -205,7 +205,15 @@ class ExperimentalSetupCT(ExperimentalSetup):
         pixels_grantry0=np.tile(pixels_grantry0, self.gantry_angles_nb)
 
         self._projections_extrema["p0"] = Utils.RotatePointAlongZ(srcs_gantry0,  g_angles)
-        self._projections_extrema["p1"] = Utils.RotatePointAlongZ(pixels_grantry0,g_angles)        
+        self._projections_extrema["p1"] = Utils.RotatePointAlongZ(pixels_grantry0,g_angles)      
+
+        print('p0 unique, counts: ', np.unique(self._projections_extrema["p0"], return_counts=True))
+        print('p1 unique X, counts: ' , np.unique(self._projections_extrema["p1"]['x'], return_counts=True))
+        print('p1 unique Y , counts: ' , np.unique(self._projections_extrema["p1"]['y'], return_counts=True))
+        print('p1 unique Z, counts: ' , np.unique(self._projections_extrema["p1"]['z'], return_counts=True))
+
+        print('shape p0 and p1: ',  self._projections_extrema["p0"].shape, self._projections_extrema["p1"].shape)
+    
     
     def GenerateProjectionsExtremaParallelBeam(self):
         """!@brief

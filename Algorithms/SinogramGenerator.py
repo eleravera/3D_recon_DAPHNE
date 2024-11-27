@@ -49,12 +49,21 @@ class SinogramGenerator:
         self.sinogram.detector_pitch_mm= self._experimental_setup._detector_pitch_mm
         self.sinogram.pixels_per_slice_nb=self._experimental_setup.pixels_per_slice_nb
         perc0=perc1=0
+
+
+        print('StartPoints and EndPoints shapes:', StartPoints.shape, EndPoints.shape)
+        print('On the length of StartingPoints a loop is done.')
+        
         for i in range(len(StartPoints)):
             perc0=perc1
             perc1=np.trunc((i+1)/len(StartPoints)*100).astype(np.int32)
             if perc1 != perc0:
                 print("Projecting data, " + str(perc1) + "% done...", end="\r")
             TOR = Siddon.CalcIntersection(StartPoints[i], EndPoints[i])
+            print('In the loop: TOR shape is ', TOR.shape)
+            print('In the loop: TOR is ', TOR)
+            
             proj = np.sum(_img[TOR["vx"], TOR["vy"], TOR["vz"]] * TOR["prob"])
             self.sinogram.AddItem(self._experimental_setup._bins['s'][i],self._experimental_setup._bins[i]['theta'],self._experimental_setup._bins[i]['slice'], proj)
+        print('loop ending')
         return self.sinogram

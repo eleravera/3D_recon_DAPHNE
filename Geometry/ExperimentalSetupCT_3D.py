@@ -23,8 +23,8 @@ from Misc.VisualizationUtils import (
     par_pixel_color,
 )
 
-default_pixel_size_CT = np.array([1, 1, 1])
-default_src_size_CT = 1
+default_pixel_size_CT = np.array([3, 3, 3])
+default_src_size_CT = 3
 
 class ExperimentalSetupCT_3D(ExperimentalSetup):
     """!@brief Implements a setup containing a  CT detector.
@@ -114,7 +114,7 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
                 self._pixel_pos_mm['x'] = np.tile(pixel_slice_x_pos,self.detector_slice_nb)
                 self._pixel_pos_mm['y'] = self.sdd_mm-self.sad_mm
                 self._pixel_pos_mm['z'] = np.repeat(self._detector_slice_z_coordinates,self.pixels_per_slice_nb)
-                print('pixel_slice_x_pos: ', pixel_slice_x_pos)
+                #print('pixel_slice_x_pos: ', pixel_slice_x_pos)
             
             elif self._detector_number==2: 
                 i = self._detector_pixel_nb
@@ -169,33 +169,31 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
             self._source_pos_mm=np.zeros(self._detector_number, dtype=point_dtype)
             
             if self._detector_number==1:
-                self._source_pos_mm['z']=0
                 self._source_pos_mm['x']=0
                 self._source_pos_mm['y']=-self.sad_mm
+                self._source_pos_mm['z']=0
 
             elif self._detector_number==2:
-                n = self._detector_number 
-                self._source_pos_mm['z'][0]=0
                 self._source_pos_mm['x'][0]=0
                 self._source_pos_mm['y'][0]=-self.sad_mm
+                self._source_pos_mm['z'][0]=0
                 
-                self._source_pos_mm['z'][1]=0
                 self._source_pos_mm['x'][1]=-self.sad_mm
                 self._source_pos_mm['y'][1]=0         
+                self._source_pos_mm['z'][1]=0
             
             elif self._detector_number==3:
-                n = self._detector_number 
-                self._source_pos_mm['z'][0]=0
                 self._source_pos_mm['x'][0]=0
                 self._source_pos_mm['y'][0]=-self.sad_mm
+                self._source_pos_mm['z'][0]=0
                 
-                self._source_pos_mm['z'][1]=0
                 self._source_pos_mm['x'][1]=-self.sad_mm
                 self._source_pos_mm['y'][1]=0
+                self._source_pos_mm['z'][1]=0
 
-                self._source_pos_mm['z'][2]=-self.sad_mm
                 self._source_pos_mm['x'][2]=0
                 self._source_pos_mm['y'][2]=0        
+                self._source_pos_mm['z'][2]=-self.sad_mm
         
             #print('self._source_pos_mm[x], self._source_pos_mm[y], self._source_pos_mm[z]:', self._source_pos_mm['x'], self._source_pos_mm['y'], self._source_pos_mm['z'])
 
@@ -326,41 +324,57 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
         '''!@brief
             Create all the projection extrema for cone beam geometry
         '''   
-        print('_detector_number, _detector_pixel_nb, gantry_angles_nb', self._detector_number, self._detector_pixel_nb, self.gantry_angles_nb)
 
         number_of_projections = self._detector_number * self._detector_pixel_nb * self.gantry_angles_nb
         self._projections_extrema = np.zeros(number_of_projections,
                                             dtype=proj_extrema_dtype)
         
-        # create an array containing the angle of each projection
-        g_angles = np.repeat(self._grantry_angles, self._detector_number * self._detector_pixel_nb)
-        #print('g_angles.shape: ', g_angles.shape)
+        g_angles = np.repeat(self._grantry_angles, self._detector_pixel_nb) # create an array containing the angle of each projection
+        
+        print('self._detector_number, self._detector_pixel_nb, self.gantry_angles_nb: %s, %s, %s', self._detector_number, self._detector_pixel_nb, self.gantry_angles_nb)
+        print('g_angles.shape: %s, g_angles: %s', g_angles.shape, np.unique(g_angles))        
         
         # 
         srcs_gantry0    = np.zeros(self._detector_number * self._detector_pixel_nb, dtype=point_dtype)
         pixels_grantry0 = np.zeros(self._detector_number * self._detector_pixel_nb, dtype=point_dtype)
         i=0
-        #print('_pixel_pos_mm.shape: ', self._pixel_pos_mm.shape, '#this is the length of the inner loop')
-        #print('self._source_pos_mm: ', self._source_pos_mm, '#this is the position of the source for ')
+        
+        print('_pixel_pos_mm.shape: ', self._pixel_pos_mm.shape, '#this is the length of the inner loop')
+        print('self._source_pos_mm: ', self._source_pos_mm, '#this is the position of the source for ')
 
         if self._detector_number==1:
             for p in self._pixel_pos_mm: 
                 srcs_gantry0[i]=self._source_pos_mm
                 pixels_grantry0[i]=p
                 i+=1
-                
+            srcs_gantry0    = np.tile(srcs_gantry0,    self.gantry_angles_nb)
+            pixels_grantry0 = np.tile(pixels_grantry0, self.gantry_angles_nb)
+            self._projections_extrema["p0"] = Utils.RotatePointAlongZ(srcs_gantry0,  g_angles)
+            self._projections_extrema["p1"] = Utils.RotatePointAlongZ(pixels_grantry0, g_angles)
+            
         elif self._detector_number==2:
             metà = int(len(self._pixel_pos_mm)*0.5)
             for p in self._pixel_pos_mm[:metà]: 
                 srcs_gantry0[i]=self._source_pos_mm[0]
                 pixels_grantry0[i]=p
                 i+=1
-    
             for p in self._pixel_pos_mm[metà:]: 
                 srcs_gantry0[i]=self._source_pos_mm[1]
                 pixels_grantry0[i]=p
                 i+=1
-
+                
+            n = self._detector_pixel_nb    
+            l = self._detector_pixel_nb * self.gantry_angles_nb
+            print('l,n: ', l, n)
+            srcs_gantry0_1    = np.tile(srcs_gantry0[:n],    self.gantry_angles_nb)
+            pixels_grantry0_1 = np.tile(pixels_grantry0[:n], self.gantry_angles_nb)
+            self._projections_extrema["p0"][:l] = Utils.RotatePointAlongZ(srcs_gantry0_1,  g_angles)
+            self._projections_extrema["p1"][:l] = Utils.RotatePointAlongZ(pixels_grantry0_1, g_angles)
+            srcs_gantry0_2   = np.tile(srcs_gantry0[n:],    self.gantry_angles_nb)
+            pixels_grantry0_2 = np.tile(pixels_grantry0[n:], self.gantry_angles_nb)
+            self._projections_extrema["p0"][l:] = Utils.RotatePointAlongZ(srcs_gantry0_2,  g_angles)
+            self._projections_extrema["p1"][l:] = Utils.RotatePointAlongZ(pixels_grantry0_2, g_angles)
+        
         elif self._detector_number==3:
             metà = int(len(self._pixel_pos_mm)/3)
             
@@ -377,15 +391,42 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
                 srcs_gantry0[i]=self._source_pos_mm[2]
                 pixels_grantry0[i]=p
                 i+=1
-        
-        srcs_gantry0    = np.tile(srcs_gantry0,    self.gantry_angles_nb)
-        pixels_grantry0 = np.tile(pixels_grantry0, self.gantry_angles_nb)
 
-        #iN REALTÀ A SECONDA DI QUALE PRENDO DOVREI RUOTARLO IN MODO DIVERSO
-        self._projections_extrema["p0"] = Utils.RotatePointAlongZ(srcs_gantry0,  g_angles)
-        self._projections_extrema["p1"] = Utils.RotatePointAlongZ(pixels_grantry0,g_angles)  
+            n = self._detector_pixel_nb    
+            l = self._detector_pixel_nb * self.gantry_angles_nb
+            srcs_gantry0_1    = np.tile(srcs_gantry0[:n],    self.gantry_angles_nb)
+            pixels_grantry0_1 = np.tile(pixels_grantry0[:n], self.gantry_angles_nb)
+            self._projections_extrema["p0"][:l] = Utils.RotatePointAlongZ(srcs_gantry0_1,  g_angles)
+            self._projections_extrema["p1"][:l] = Utils.RotatePointAlongZ(pixels_grantry0_1, g_angles)
+            srcs_gantry0_2    = np.tile(srcs_gantry0[n:2*n],    self.gantry_angles_nb)
+            pixels_grantry0_2 = np.tile(pixels_grantry0[n:2*n], self.gantry_angles_nb)
+            self._projections_extrema["p0"][l:2*l] = Utils.RotatePointAlongZ(srcs_gantry0_2,  g_angles)
+            self._projections_extrema["p1"][l:2*l] = Utils.RotatePointAlongZ(pixels_grantry0_2, g_angles)
+            srcs_gantry0_3    = np.tile(srcs_gantry0[2*n:],    self.gantry_angles_nb)
+            pixels_grantry0_3 = np.tile(pixels_grantry0[2*n:], self.gantry_angles_nb)
+            self._projections_extrema["p0"][2*l:] = Utils.RotatePointAlongY(srcs_gantry0_3,  g_angles)
+            self._projections_extrema["p1"][2*l:] = Utils.RotatePointAlongY(pixels_grantry0_3, g_angles)
         
+        print('srcs_gantry0, pixels_grantry0: ', srcs_gantry0, pixels_grantry0)
+        #print('self._projections_extrema["p0"], self._projections_extrema["p1"]: ', self._projections_extrema["p0"], self._projections_extrema["p1"])
+        #print('self._projections_extrema["p0"]: ', np.unique(self._projections_extrema["p0"]))
+        #print('self._projections_extrema["p1"]: ', np.unique(self._projections_extrema["p1"]))
+        
+        """            srcs = np.tile(self._source_pos_mm[0:i], self.gantry_angles_nb)
+                    pixels = np.tile(self._pixel_pos_mm[0:i], self.gantry_angles_nb)
+                    # apply the rotation
+                    self._projections_extrema["p0"][:l] = Utils.RotatePointAlongZ(srcs, g_angles)
+                    self._projections_extrema["p1"][:l] = Utils.RotatePointAlongZ(pixels, g_angles)
+        """
 
+        print('p0 unique, counts: ', np.unique(self._projections_extrema["p0"], return_counts=True))
+        print('p1 unique X, counts: ' , np.unique(self._projections_extrema["p1"]['x'], return_counts=True))
+        print('p1 unique Y , counts: ' , np.unique(self._projections_extrema["p1"]['y'], return_counts=True))
+        print('p1 unique Z, counts: ' , np.unique(self._projections_extrema["p1"]['z'], return_counts=True))
+
+        print('shape p0 and p1: ',  self._projections_extrema["p0"].shape, self._projections_extrema["p1"].shape)
+    
+    
         
     def GenerateProjectionsExtremaParallelBeam(self):
         """!@brief
@@ -402,7 +443,13 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
         g_angles = np.repeat(self._grantry_angles, self._detector_pixel_nb)
 
         if self._detector_number==1:
-            print('caso1')
+            # create an array containing the coordinates of the src and pixels before the rotation
+            srcs = np.tile(self._source_pos_mm, self.gantry_angles_nb)
+            pixels = np.tile(self._pixel_pos_mm, self.gantry_angles_nb)
+            # apply the rotation
+            self._projections_extrema["p0"] = Utils.RotatePointAlongZ(srcs, g_angles)
+            self._projections_extrema["p1"] = Utils.RotatePointAlongZ(pixels, g_angles)
+            
 
         elif self._detector_number==2: 
             # create an array containing the coordinates of the src and pixels before the rotation
@@ -467,7 +514,7 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
         # calculate the slice coordinates along y
         self._detector_slice_y_coordinates=np.arange(-self.detector_slice_nb+1,self.detector_slice_nb+1,2)/2*self.slice_pitch_mm
         
-        # calculate the slice coordinates along x  #DA CONTROLLARE PERCHÈ POTREBBE ESSERE UNA CAZZATA, BISOGNA UN ATTIMO VEDERE DETECTOR POS ETC
+        # calculate the slice coordinates along x 
         self._detector_slice_x_coordinates=np.arange(-self.detector_slice_nb+1,self.detector_slice_nb+1,2)/2*self.slice_pitch_mm
 
         # generate the gantry angles 
