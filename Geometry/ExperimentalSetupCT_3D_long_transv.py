@@ -23,8 +23,8 @@ from Misc.VisualizationUtils import (
     par_pixel_color,
 )
 
-default_pixel_size_CT = np.array([2.967,2.967,2.967])
-default_src_size_CT = 2.967
+#default_pixel_size_CT = np.array([2.967,2.967,2.967])
+#default_src_size_CT = 2.967
 
 class ExperimentalSetupCT_3D(ExperimentalSetup):
     """!@brief Implements a setup containing a  CT detector.
@@ -33,7 +33,7 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
 
     def __init__(self):
         self.detector_type = DetectorType.CT
-
+    
     def SetMode(self, mode):
         """!@brief
         Mode can be either: parallel beam, cone beam or fan beam
@@ -57,6 +57,14 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
             self.detector_shape = DetectorShape.ARC
         else:
             raise Exception("Detector shape not supported")
+
+    def CalculateParamGeometry(self):
+        """!@brief
+        """
+        
+        return
+    
+
     
     def __Validate(self):
         """!@brief 
@@ -86,21 +94,18 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
         
         if detector_shape==DetectorShape.PLANAR:
             # evaluate the size of the detector according to the fan size
-            detector_size = 2*self.sdd_mm*np.tan(np.deg2rad(self.fan_angle_deg/2))
-            print('detector_size: %.f mm    #calculated as 2*sdd*tan(fan_angle/2)' %detector_size)
-            pixel_size = detector_size/self.pixels_per_slice_nb #default_pixel_size_CT[0] 
+            #detector_size = 2*self.sdd_mm*np.tan(np.deg2rad(self.fan_angle_deg/2))
+            print('self.detector_size: %.f mm    #calculated as 2*sdd*tan(fan_angle/2)' %self.detector_size)
             pixel_slice_x_pos, self._detector_pitch_mm =np.linspace(
-                                                        (-detector_size/2+pixel_size/2),
-                                                        ( detector_size/2-pixel_size/2),
+                                                        (-self.detector_size/2+self.pixel_size/2),
+                                                        ( self.detector_size/2-self.pixel_size/2),
                                                         self.pixels_per_slice_nb,
                                                         retstep=True)
-            
-            
             
             pixel_slice_x_pos = np.arange(-self.pixels_per_slice_nb+1, self.pixels_per_slice_nb+1, 2)/2*self.slice_pitch_mm
             pixel_slice_y_pos, pixel_slice_z_pos = pixel_slice_x_pos, pixel_slice_x_pos
 
-            if (detector_size*0.5 > (pixel_slice_x_pos.max() + default_src_size_CT*0.5)): 
+            if (self.detector_size*0.5 > (pixel_slice_x_pos.max() + self.pixel_size*0.5)): 
                 print('The detector should be bigger! You can either: \n- increase the pixels_per_slice_nb \n-decrease the fan_angle_deg \n-decrease the slice_pitch_mm\n')
             
             if self._detector_number==1:
@@ -121,6 +126,10 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
                 self._pixel_pos_mm['y'][i:] = self.sdd_mm-self.sad_mm 
                 self._pixel_pos_mm['z'][i:] = np.tile(pixel_slice_z_pos,self.detector_slice_nb)
 
+                #outputFile = '/home/eleonora/posizion_pixels.txt'
+                #np.savetxt(outputFile, self._pixel_pos_mm,fmt='%.2f')
+                
+            
             elif self._detector_number==3:
                 i = self._detector_pixel_nb
                 # create all the pixels self._source_pos_mm[x], self._source_pos_mm[y], self._source_pos_mm[z]: [0.] [0.] [0.]
@@ -497,7 +506,7 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
                 ren.AddActor(
                     CreateCube(
                         _pixel,
-                        default_pixel_size_CT,
+                        self.pixel_size,
                         0,
                         np.asarray([0, -1, 0]),
                         par_pixel_color,
@@ -507,14 +516,15 @@ class ExperimentalSetupCT_3D(ExperimentalSetup):
                 ren.AddActor(
                     CreateAutoOrientedeCube(
                         _pixel,
-                        default_pixel_size_CT,
+                        self.pixel_size,
                         par_pixel_color,
                     )
                 )
         # add srcs
         for _src in self._source_pos_mm:
+            source_size = self.pixel_size
             #ren.AddActor(CreateSphere(_src,self.slice_pitch_mm/2.0, par_src_color))            
-            ren.AddActor(CreateSphere(_src,default_src_size_CT, par_src_color))            
+            ren.AddActor(CreateSphere(_src, source_size, par_src_color))            
         ren.AddActor(CreateLabel(self._source_pos_mm[0], "Sources"))
         #  add 3d axis
         ren.AddActor(CreateAxesActor(5))

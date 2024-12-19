@@ -7,7 +7,7 @@ dims = 3
 """ 
     Precision of the floating number used in this project
 """
-float_precision_dtype = np.float64
+float_precision_dtype = np.float128
 """ 
     This dtype implements a point in 3D physical space
 """

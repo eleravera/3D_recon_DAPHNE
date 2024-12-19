@@ -60,14 +60,14 @@ class SinogramGenerator_3D:
 
         print('Projection on first detector')
 
+        my_list = [1702, 1762, 1822, 1882]
         perc0=perc1=0
         for i in range(0, first_detector):
               perc0=perc1
               perc1=np.trunc((i+1)/len(StartPoints)*100).astype(np.int32)
               if perc1 != perc0:
                   print("Projecting data, " + str(perc1) + "% done...", end="\r")
-              TOR = Siddon.CalcIntersection(StartPoints[i], EndPoints[i])
-
+              TOR = Siddon.CalcIntersection(StartPoints[i], EndPoints[i])        
               mask = (TOR["vx"] >= 100) | (TOR["vy"] >= 100) | (TOR["vz"] >= 100)
             
               try:
@@ -85,7 +85,13 @@ class SinogramGenerator_3D:
                     print("vx:", TOR["vx"][mask])
                     print("vy:", TOR["vy"][mask])
                     print("vz:", TOR["vz"][mask])
-                    print("prob:", TOR["prob"][mask])  
+                    print("prob:", TOR["prob"][mask])
+                    with open("/home/eleonora/3D_recon_DAPHNE/Reconstruction/TOR.txt", "a") as log_file:
+                        log_file.write(f"TOR: {TOR}\n")
+                        log_file.write(f"{_}")
+                        log_file.write('\n')
+
+        
         print('shape sino 0: ' , sinogram_list[0]._data.shape)
 
 
@@ -115,10 +121,9 @@ class SinogramGenerator_3D:
               if perc1 != perc0:
                   print("Projecting data, " + str(perc1) + "% done...", end="\r")
               TOR = Siddon.CalcIntersection(StartPoints[i+first_detector], EndPoints[i+first_detector])
-
             
               mask = (TOR["vx"] >= 100) | (TOR["vy"] >= 100) | (TOR["vz"] >= 100)
-            
+
               try:
                 if np.any(mask):  # Se esistono valori sopra il limite
                     raise ValueError("Indici fuori dai limiti rilevati, impossibile calcolare proj.")
@@ -126,15 +131,9 @@ class SinogramGenerator_3D:
                 # Calcola `proj` solo se non ci sono indici fuori dai limiti
                 proj = np.sum(_img[TOR["vx"], TOR["vy"], TOR["vz"]] * TOR["prob"])
                 sino.AddItem(self._experimental_setup._bins['s'][i],self._experimental_setup._bins[i]['theta'],self._experimental_setup._bins[i]['slice'], proj)
-              
+                
               except ValueError as e:
-                """if np.any(TOR["prob"][mask] > 1.e-13):
-                    print(f"Errore durante il calcolo di proj: {e}")
-                    print("Valori con indici >= 100:")
-                    print("vx:", TOR["vx"][mask])
-                    print("vy:", TOR["vy"][mask])
-                    print("vz:", TOR["vz"][mask])
-                    print("prob:", TOR["prob"][mask]) """ 
+                print(f"Errore durante il calcolo di proj: {e}")
                 with open("/home/eleonora/3D_recon_DAPHNE/Reconstruction/error_log.txt", "a") as log_file:
                     log_file.write(f"Errore durante il calcolo di proj: {e}\n")
                     log_file.write("Valori con indici >= 100:\n")

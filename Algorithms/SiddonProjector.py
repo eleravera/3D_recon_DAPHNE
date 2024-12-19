@@ -116,6 +116,28 @@ class SiddonProjector:
             (P1["z"] + alphamid * (P2["z"] - P1["z"]) - self._Zplanes[0])
             // self.voxel_size_mm[2]
         ).astype(int)
+
+        mask1 = (TOR["vx"] >= 100)
+        mask2 = (TOR["vy"] >= 100)
+        mask3 = (TOR["vz"] >= 100)
+        mask = mask1 | mask2 | mask3
+        
+        if np.any(mask):  # Verifica se c'è almeno un True in mask
+            print(TOR[mask])        
+            if  np.any(mask1):
+                my_var = 0
+            if np.any(mask2):
+                my_var = 1
+            if np.any(mask3):
+                my_var = 2
+                
+            with open("/home/eleonora/3D_recon_DAPHNE/Reconstruction/TOR_error.txt", "a") as log_file:
+                my_x = (P1["x"] + alphamid * (P2["x"] - P1["x"]) - self._Xplanes[0])
+                my_y = (P1["y"] + alphamid * (P2["y"] - P1["y"]) - self._Yplanes[0])
+                my_z = (P1["z"] + alphamid * (P2["z"] - P1["z"]) - self._Zplanes[0])
+                log_file.write(f"TOR: {TOR[mask]}\n")
+                log_file.write(f"alphamid: {alphamid}, self._Xplanes[0]: {self._Xplanes[0]}, vocel_size[0]: {self.voxel_size_mm[0]}, my var: {my_var}, my: {my_x}, {my_y}, {my_z}\n")
+                log_file.write('\n')
         return TOR
 
     def DrawLine(self, P1, P2):

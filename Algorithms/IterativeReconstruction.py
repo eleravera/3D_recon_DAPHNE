@@ -3,7 +3,8 @@ from Algorithms.SiddonProjector import SiddonProjector
 import sys
 import time
 from Misc.DataTypes import voxel_dtype, projection_dtype
-from Misc.Utils import Pickle, SaveMatrix
+from Misc.Utils import Pickle
+from Misc.OutputDir import SaveMatrix
 
 projector_debug_msg =0
 

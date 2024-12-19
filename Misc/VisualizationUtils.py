@@ -148,14 +148,14 @@ def CreateCube(center, size, angle, orientation, color):
     # create the cube_src representing the crystal
     cube_src = vtk.vtkCubeSource()
     # depth
-    cube_src.SetXLength(size[0])
+    cube_src.SetXLength(size)
     # trans-axial
-    cube_src.SetYLength(size[2])
+    cube_src.SetYLength(size)
     # axial
-    cube_src.SetZLength(size[1])
+    cube_src.SetZLength(size)
     # set the center of the cube_src in the TR center
     new_center = np.array(center.tolist())
-    new_center = EvaluatePoint(new_center, orientation, size[2])
+    new_center = EvaluatePoint(new_center, orientation, size)
     cube_src.SetCenter(new_center)
     cube_src.Update()
     # mapper
@@ -224,4 +224,7 @@ def CreateLine(p0, p1,width,color):
     line_actor.GetProperty().SetLineWidth(width)
     line_actor.GetProperty().SetColor(color)
     return line_actor
+
+
+
 
