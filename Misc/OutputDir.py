@@ -98,6 +98,22 @@ class SaveOutput:
             fig.savefig(f"{self.outputDir}/figure{i}.png") 
 
 
+
+    def PlotProfile(self, inputImage, sigmaTitle, savefig=False):
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        ax.plot(inputImage[50, 50, 10:30])
+        ax.set(title = f'Slice [50,50,:] - sigma = {sigmaTitle}')
+        ax.grid()
+        if savefig:
+            i = 1
+            while os.path.exists(f"{self.outputDir}/figure{i}.png"):
+                i += 1
+            fig.savefig(f"{self.outputDir}/figure{i}.png")    
+        return        
+     
+    
+
+
     class Tee:
         """Classe per duplicare l'output su terminale e file."""
         def __init__(self, file_name, mode="w"):

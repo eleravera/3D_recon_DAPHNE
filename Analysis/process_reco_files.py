@@ -6,6 +6,7 @@ import argparse
 import os
 import numpy as np
 import time 
+from scipy.ndimage import gaussian_filter
 import Analysis.AnalyisiFunctions as Analysis
 
 
@@ -46,8 +47,9 @@ def process_data(input_matrix, reconstructed_matrix, normalization_type='slice')
     relative_difference_stats = Analysis.calculate_difference_stats(rel_diff_)
 
     # Statistiche dei range
-    stats_range_5 = Analysis.range_statistics(rel_diff_, -0.05, 0.05)
-    stats_range_10 = Analysis.range_statistics(rel_diff_, -0.1, 0.1)
+    mask = normalized_reconstructed > 0.1*normalized_reconstructed.max()
+    stats_range_5 = Analysis.range_statistics(rel_diff_[mask], -0.05, 0.05)
+    stats_range_10 = Analysis.range_statistics(rel_diff_[mask], -0.1, 0.1)
 
     # Output
     results = {
@@ -84,9 +86,14 @@ if __name__ == "__main__":
     parser.add_argument('--do_Gamma', action='store_true', help="Lancia la gamma analisi. (Default: False).")
     parser.add_argument('--criteria', nargs=3, type=float, metavar=('DOSE', 'DISTANCE', 'THRESHOLD'),
                         help="Specifica i criteri come 3 valori: percentuale in dose, distanza in mm, soglia di dose.")
+    parser.add_argument('--sigma', type=int, default=None, help="Sigma for the Gaussian filter (must be an integer).")
     args = parser.parse_args()    
 
-    input_matrix = np.load(args.input_file)['doseDistr']  
+    input_matrix = np.load(args.input_file)['doseDistr'].astype(np.float64)
+    
+    if args.sigma is not None: 
+        input_matrix = gaussian_filter(input_matrix, sigma = args.sigma/6, order = 0)
+    
     latest_recon_file = os.path.join(args.recon_dir, 'reco.npz') if os.path.isfile(os.path.join(args.recon_dir, 'reco.npz')) else None
     
     iteration_number = 0
@@ -141,7 +148,6 @@ if __name__ == "__main__":
             # Esci dal ciclo quando non ci sono più iterazioni
             print(f"Iterazione {iteration_number} non trovata. Fine del ciclo.")
             break
-
 
 
     if args.do_Gamma:

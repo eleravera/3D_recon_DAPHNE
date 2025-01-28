@@ -205,7 +205,7 @@ def Visualize3dImageWithProfile(img, slice_axis=2, profile_axis=0, _cmap='gray',
  
 
 
-def Visualize3dImageWithProfileAndHistogram(img, slice_axis=2, profile_axis=0, _cmap='gray', symmetric_colorbar=False, title=''):
+def Visualize3dImageWithProfileAndHistogram(img, slice_axis=2, profile_axis=0, _cmap='gray', symmetric_colorbar=False, title='', log_scale_hist = False):
     """!
     Display a 3D ndarray with sliders to move along the third dimension, 
     with a profile and histogram of the signal in the current slice.
@@ -231,8 +231,11 @@ def Visualize3dImageWithProfileAndHistogram(img, slice_axis=2, profile_axis=0, _
     if symmetric_colorbar:
         # Create symmetric color normalization
         vmin, vmax = -max(abs(global_min), abs(global_max)), max(abs(global_min), abs(global_max))
+        #cleaned_data = img[np.isfinite(img)]
+        #vmin, vmax = np.percentile(cleaned_data, 5), np.percentile(cleaned_data, 95)
         norm = Normalize(vmin, vmax)
         _cmap = 'RdBu_r'
+        #print("vmin, vmax: ", vmin, vmax)
     else:
         vmin, vmax = global_min, global_max
         # Use the global min and max for color normalization
@@ -263,9 +266,10 @@ def Visualize3dImageWithProfileAndHistogram(img, slice_axis=2, profile_axis=0, _
     ax3.hist(signal_values[~np.isnan(signal_values)], bins=100, color='blue', alpha=0.7)
     ax3.set_title("Signal Histogram")
     ax3.set_ylabel("Frequency")
+    ax3.set_xlim(vmin, vmax)    # Set fixed limits for histogram based on vmin and vmax
     
-    # Set fixed limits for histogram based on vmin and vmax
-    ax3.set_xlim(vmin, vmax)
+    if log_scale_hist == True:
+        ax3.set_yscale('log')
     
     # Add sliders for image slice and profile position
     ax_slider1 = plt.axes([0.1, 0.01, 0.25, 0.03])  # Slider for image slice (below ax1)
@@ -301,9 +305,9 @@ def Visualize3dImageWithProfileAndHistogram(img, slice_axis=2, profile_axis=0, _
         ax3.set_xlabel("Signal Intensity")
         ax3.set_ylabel("Frequency")
         ax3.grid(True, linestyle="--", alpha=0.7)
-        
-        # Set fixed x limits for histogram
-        ax3.set_xlim(vmin, vmax)
+        ax3.set_xlim(vmin, vmax)# Set fixed x limits for histogram
+        if log_scale_hist == True:
+            ax3.set_yscale('log')
         
         # Remove previous red line
         if red_line is not None:

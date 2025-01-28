@@ -38,6 +38,7 @@ def read_log_file(log_file_path):
     pitch = np.array(pitch)
     views = np.array(views)
     pixels = np.array(pixels)
+    input_files = np.array(input_files)
     output_directories = np.array(output_directories)
                                 
     return iterations, pitch, views, pixels, input_files, output_directories
@@ -154,12 +155,17 @@ def calculate_sad(pixels, pitch):
 ###################################################################################################################
 
 
-PLOT_ITER = False
+PLOT_ITER = True
+PLOT_ITER_SAD = False
 PIXELS_LIST = [200, 400, 500]
 VIEWS_LIST = [4, 8]
 ITER = 50
+COMPARE_EDGE = False
+INPUT_FILE = '/home/eleonora/eFLASH_3D_Sim-build/Dose_Map_30mm/spettro_9MeV/doseDistribution.npz'
 
 log_file_path = "/home/eleonora/3D_recon_DAPHNE/Reconstruction/log.txt"
+
+
 
 
 last_5_percentages = []
@@ -169,17 +175,22 @@ last_diff_mean = []
 source_axis_distance = []
 legend = []
 
+
+all_5_percentages = []
+all_10_percentages = []
+
 for VIEWS in VIEWS_LIST:
     for PIXEL in PIXELS_LIST: 
 
         iterations, pitch, views, pixels, input_files, folder_path = read_log_file(log_file_path)
 
-        mask = (pixels == PIXEL) * (views == VIEWS)
+        mask = (pixels == PIXEL) * (views == VIEWS) * (input_files == INPUT_FILE)
         iterations = iterations[mask]
         pitch = pitch[mask]
         views = views[mask]
         pixels = pixels[mask]
         folder_path = folder_path[mask]
+        input_files = input_files[mask]
         sad = calculate_sad(pixels, pitch)
 
         statistics = []
@@ -204,9 +215,13 @@ for VIEWS in VIEWS_LIST:
         last_diff_mean.append(np.array(diff_mean))
         source_axis_distance.append(sad)
         legend.append(f'{PIXEL} pixels, {VIEWS} views')
+        
+        
+        all_5_percentages.append(np.array(stats['5%_Percentage']))
+        all_10_percentages.append(np.array(stats['10%_Percentage']))
+        
 
-
-        if PLOT_ITER: 
+        if PLOT_ITER_SAD: 
             plot_vs_iteration(statistics, folder_path, "Rel Diff Mean", "Rel Diff Mean", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
             plot_vs_iteration(statistics, folder_path, "5%_Percentage", "5% Percentage", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
             plot_vs_iteration(statistics, folder_path, "10%_Percentage", "10% Percentage", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
@@ -220,6 +235,27 @@ for VIEWS in VIEWS_LIST:
             plot_last_metrics(sad, percentages_10, 'sad [mm]', '10% Percentage', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
             plot_last_metrics(sad, sp_res, 'sad [mm]', 'Spatial resolution', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
             plot_last_metrics(sad, diff_mean, 'sad [mm]', '$\mu$ relative', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
+
+
+
+if PLOT_ITER:
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for i in range(0, len(all_5_percentages)):
+        plt.plot(np.linspace(0,49, 50), all_5_percentages[i], label=legend[i])
+    plt.legend()
+    plt.grid()
+    plt.xlabel("Iteration")
+    plt.ylabel("5% Percentage")
+    plt.show()
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for i in range(0, len(all_10_percentages)):
+        plt.plot(np.linspace(0,49, 50), all_10_percentages[i], label=legend[i])
+    plt.legend()
+    plt.grid()
+    plt.xlabel("Iteration")
+    plt.ylabel("10% Percentage")
+    plt.show()
 
 
 fig_5, ax_5 = plt.subplots(figsize=(10, 6))
@@ -256,5 +292,60 @@ ax_res.grid(True)
 ax_mu.set(xlabel='sad [mm]', ylabel='mu', title='')
 ax_mu.legend()
 ax_mu.grid(True)
-plt.show()
 
+
+
+
+
+if COMPARE_EDGE == True: 
+    data = [
+        {"directory": "/2025-01-15_10-01-27", "sigma": 2},
+        {"directory": "/2025-01-15_18-50-34", "sigma": 4},
+        {"directory": "/2025-01-15_21-07-25", "sigma": 6},
+        {"directory": "/2025-01-15_23-28-45", "sigma": 8}
+    ]
+
+    statistics = []
+    sigma = []
+    for entry in data:  
+        folder = os.path.dirname(log_file_path) + entry["directory"]
+        s = entry["sigma"]
+        print(f"Processing folder: {folder}, with sigma: {s}")
+        stats = read_output_statistics(folder) 
+        statistics.append(stats)
+        sigma.append(s)
+
+
+    percentages_5 = [stats['5%_Percentage'][-1] for stats in statistics]
+    percentages_10 = [stats['10%_Percentage'][-1] for stats in statistics]
+    sp_res = [stats['Spatial_res'][-1] for stats in statistics]
+    diff_mean = [stats['Rel Diff Mean'][-1] for stats in statistics]
+    
+    
+    fig_5, ax_5 = plt.subplots(figsize=(10, 6))
+    fig_10, ax_10 = plt.subplots(figsize=(10, 6))
+    fig_res, ax_res = plt.subplots(figsize=(10, 6))
+    fig_mu, ax_mu = plt.subplots(figsize=(10, 6))
+
+    ax_5.plot(sigma, percentages_5, '-o')
+    ax_5.set(xlabel='sigma', ylabel='5%', title='')
+    ax_5.grid(True)
+
+    ax_10.plot(sigma, percentages_10, '-o')
+    ax_10.set(xlabel='sigma', ylabel='10%', title='')
+    ax_10.grid(True)
+
+    ax_res.plot(sigma, sp_res, '-o')
+    ax_res.set(xlabel='sigma', ylabel='sp resl', title='')
+    ax_res.grid(True)
+
+    ax_mu.plot(sigma, diff_mean, '-o')
+    ax_mu.set(xlabel='sigma', ylabel='mu', title='')
+    ax_mu.grid(True)
+    plt.show()
+    
+    
+
+
+
+plt.show()    

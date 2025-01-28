@@ -241,6 +241,8 @@ def plot_signal_histograms(img1, img2, bins=50, labels=("Image 1", "Image 2"), t
     plt.figure(figsize=(8, 6))
     plt.hist(signal1, bins=bins, color=colors[0], alpha=0.7, label=labels[0])
     plt.hist(signal2, bins=bins, color=colors[1], alpha=0.7, label=labels[1])
+    #threshold = 0.1 * signal2.max()
+    #plt.axvline(x=threshold, color='red', linestyle='--', label="Threshold 10%")
     plt.xlabel("Signal")
     plt.ylabel("Frequency")
     plt.title(title)
@@ -265,23 +267,26 @@ def plot_difference_histograms(difference, relative_difference, bins=100):
     rel_diff_flattened = relative_difference[~np.isnan(relative_difference)].flatten()
     
     # Maschera della relative_difference (escludere NaN in rel_diff)
-    masked_diff = difference[~np.isnan(relative_difference)].flatten()
+    #masked_diff = difference[~np.isnan(relative_difference)].flatten()
+    
     
     # Creazione del plot
     fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
 
     # Istogramma della difference
     axes[0].hist(diff_flattened, bins=bins, color='blue', histtype='step', label='Difference')
-    axes[0].hist(masked_diff, bins=bins, color='orange', histtype='step', label='Masked Difference')
+    #axes[0].hist(masked_diff, bins=bins, color='orange', histtype='step', label='Masked Difference')
     axes[0].set_title("Histogram of Difference")
     axes[0].set_xlabel("Difference")
     axes[0].set_ylabel("Frequency")
     axes[0].legend()
 
     # Istogramma della relative difference
-    axes[1].hist(rel_diff_flattened, bins=bins, color='green', histtype='step')
+    axes[1].hist(rel_diff_flattened, bins=bins, color='green', histtype='step', label='Relative Difference')
+    #axes[1].hist(masked_diff, bins=bins, color='orange', histtype='step', label='Masked Relative Difference')    
     axes[1].set_title("Histogram of Relative Difference")
     axes[1].set_xlabel("Relative Difference")
+    axes[1].legend()
 
     # Mostra il plot
     axes[0].grid(True, linestyle="--", alpha=0.7)
@@ -383,16 +388,17 @@ def gamma_analysis_3d(reference, verification, spacing, dose_crit, dist_crit, do
     # Esclude i punti sotto la soglia
     mask_reference = reference >= dose_threshold
     mask_verification = verification >= dose_threshold
-    valid_mask = mask_reference & mask_verification  # Maschera per punti validi
+    valid_mask = mask_verification  # Maschera per punti validi
 
     # Inizializza la mappa gamma
     gamma_map = np.full(verification.shape, np.inf)
-
     start_time = time.time()
+    
     # Itera sui punti di verifica per mantenere la logica della funzione originale
     for i in range(verification.shape[0]):
+        print('slice i/100, time: ', i, time.time()-start_time)
+        
         for j in range(verification.shape[1]):
-            print('i, j, time: ', i, j, time.time()-start_time)
             for k in range(verification.shape[2]):
                 # Esclude i punti sotto la soglia
                 if reference[i, j, k] < dose_threshold or verification[i, j, k] < dose_threshold:
@@ -405,9 +411,12 @@ def gamma_analysis_3d(reference, verification, spacing, dose_crit, dist_crit, do
                 delta_z = zv - zv[i, j, k]
                 delta_dist = np.sqrt(delta_x**2 + delta_y**2 + delta_z**2)
 
+
                 # Calcola gamma per ogni punto
                 gamma = np.sqrt((delta_dose / dose_crit_abs)**2 + (delta_dist / dist_crit)**2)
-                gamma_map[i, j, k] = np.min(gamma[valid_mask])  # Prendi il minimo solo sui punti validi
+                gamma_map[i, j, k] = np.min(gamma[valid_mask])  # Prendi il minimo solo sui punti validi     
+                
+                     
 
     # Calcola la percentuale di punti conformi
     passing_rate = np.sum(gamma_map <= 1) / np.sum(valid_mask) * 100
