@@ -3,35 +3,21 @@ import os
 import re
 import time
 
-#DONE
-"""
-#400 pixels, @53 cm, 8 detector
-    {"directory": "2024-12-21_12-43-27", "criteria": [3, 3, 0.1]}, 
-    {"directory": "2024-12-21_12-43-27", "criteria": [3.0, 5.0, 0.1]}, 
-    {"directory": "2024-12-21_12-43-27", "criteria": [5.0, 3.0, 0.1]},
-    {"directory": "2024-12-21_12-43-27", "criteria": [5.0, 5.0, 0.1]}    
-    {"directory": "2024-12-21_12-43-27", "criteria": [3.0, 10.0, 0.1]}
-
-"""
-
-
-#GOING ON DIFFERENT CORES 
-"""
-"""
-
-
 ##############################################################################################
 #To do the gamma analisi
 
 configurations = [
-{"directory": "2025-01-21_09-53-49/", "criteria": [3.0, 3.0, 0.1]}, #500 pixels, @53 cm, 8 det
-{"directory": "2025-01-21_09-53-49/", "criteria": [3.0, 5.0, 0.1]}, 
-{"directory": "2025-01-21_09-53-49/", "criteria": [5.0, 3.0, 0.1]}, 
-{"directory": "2025-01-21_09-53-49/", "criteria": [5.0, 5.0, 0.1]}
+
+{"directory": "2025-01-29_12-12-05/", "criteria": [1.0, 1.0, 0.1]},
+#{"directory": "2025-01-29_12-12-05/", "criteria": [3.0, 3.0, 0.03]},
+#{"directory": "2025-01-29_12-12-05/", "criteria": [2.0, 2.0, 0.02]},
 ] 
 
+
+
+
 path_to_search = "/home/eleonora/3D_recon_DAPHNE/Reconstruction/"
-input_file = "/home/eleonora/eFLASH_3D_Sim-build/Dose_Map_30mm/spettro_9MeV/doseDistribution.npz" 
+input_file = "/home/eleonora/3D_recon_DAPHNE/Data/doseDistribution_flip.npz" 
 
 for config in configurations:
     # Separiamo i criteri in singoli argomenti

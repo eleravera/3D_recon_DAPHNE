@@ -166,9 +166,10 @@ if __name__ == "__main__":
         
         spacing = [1.0, 1.0, 1.0]  # Spaziatura in mm (es. voxel isotropici)
         
-        gamma_map, passing_rate = Analysis.gamma_analysis_3d(input_matrix, reconstructed_matrix, spacing, dose_crit=criteria[0], dist_crit=criteria[1], dose_threshold=criteria[2])
+        gamma_map, passing_rate, dose_contribution, space_contribution = Analysis.gamma_analysis_3d(input_matrix, reconstructed_matrix, spacing, dose_crit=criteria[0], dist_crit=criteria[1], dose_threshold=criteria[2])
         print("Percentuale di punti conformi:", passing_rate, "%")
 
         output_file = args.recon_dir + 'gamma_analysis.npz'   
         Analysis.save_matrix_to_npz(output_file, gamma_map, str(criteria))
-
+        Analysis.save_matrix_to_npz(output_file, dose_contribution, f'dose_contribution_{criteria}')
+        Analysis.save_matrix_to_npz(output_file, space_contribution, f'space_contribution_{criteria}')

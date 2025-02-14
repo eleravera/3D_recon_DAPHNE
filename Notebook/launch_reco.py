@@ -48,22 +48,33 @@ import subprocess
     {"pixel_nb": 400, "pixel_pitch": 0.40, "long_views": 8, "sigma": 6}, #7-8
     {"pixel_nb": 400, "pixel_pitch": 0.40, "long_views": 8, "sigma": 8} #
     
+
+    con dose distribution non ruotata "/home/eleonora/eFLASH_3D_Sim-build/Dose_Map_30mm/spettro_9MeV/doseDistribution.npz"
+     {"pixel_nb": 500, "pixel_pitch": 0.32, "long_views": 8},
+     {"pixel_nb": 400, "pixel_pitch": 0.40, "long_views": 8}, 
+     {"pixel_nb": 200, "pixel_pitch": 0.80, "long_views": 8},
+     {"pixel_nb": 500, "pixel_pitch": 0.32, "long_views": 4},
+     {"pixel_nb": 400, "pixel_pitch": 0.40, "long_views": 4}, 
+     {"pixel_nb": 200, "pixel_pitch": 0.80, "long_views": 4},
     
 """
 
 
-configurations = [
+"""
      {"pixel_nb": 500, "pixel_pitch": 0.32, "long_views": 8},
      {"pixel_nb": 400, "pixel_pitch": 0.40, "long_views": 8}, 
      {"pixel_nb": 200, "pixel_pitch": 0.80, "long_views": 8},
-
      {"pixel_nb": 500, "pixel_pitch": 0.32, "long_views": 4},
      {"pixel_nb": 400, "pixel_pitch": 0.40, "long_views": 4}, 
+     {"pixel_nb": 200, "pixel_pitch": 0.80, "long_views": 4}
+"""
+
+
+configurations = [
      {"pixel_nb": 200, "pixel_pitch": 0.80, "long_views": 4},
-     
 ]
 
-input_file = "/home/eleonora/eFLASH_3D_Sim-build/Dose_Map_30mm/spettro_9MeV/doseDistribution.npz"  # "../Data/cylindrical_phantom.npz"
+input_file = "../Data/cylindrical_phantom.npz"#"../Data/doseDistribution_flip.npz" #"../Data/cylindrical_phantom.npz"
 iterations = 50
 
 # Ciclo attraverso le configurazioni e eseguo lo script

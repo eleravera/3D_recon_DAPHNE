@@ -27,7 +27,7 @@ class MLEM(IterativeReconstruction):
         #  backprojection
         tmp = self.BackProjection(proj)
         # apply sensitivity correction and update current estimate 
-        self._image = self._image * self._S * tmp
+        self._image = self._image * self._S * tmp        
 
     def __EvaluateSensitivity(self):
         """!@brief
@@ -43,3 +43,4 @@ class MLEM(IterativeReconstruction):
             Compute all the weighting factors needed for the update rule
         """
         self.__EvaluateSensitivity()
+        #np.savez('/home/eleonora/3D_recon_DAPHNE/Algorithms/sensitivity.npz', matrixname = self._S)

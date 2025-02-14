@@ -389,14 +389,19 @@ def gamma_analysis_3d(reference, verification, spacing, dose_crit, dist_crit, do
     mask_reference = reference >= dose_threshold
     mask_verification = verification >= dose_threshold
     valid_mask = mask_verification  # Maschera per punti validi
+    
+    #sum_valid_mask= np.sum(valid_mask)
+    #print('THE SUM OF VALID MASK IS: ', sum_valid_mask)
 
     # Inizializza la mappa gamma
     gamma_map = np.full(verification.shape, np.inf)
-    start_time = time.time()
+    
+    dose_contribution_map = np.full(verification.shape, np.inf)
+    spatial_contribution_map = np.full(verification.shape, np.inf)    
     
     # Itera sui punti di verifica per mantenere la logica della funzione originale
     for i in range(verification.shape[0]):
-        print('slice i/100, time: ', i, time.time()-start_time)
+        start_time = time.time()
         
         for j in range(verification.shape[1]):
             for k in range(verification.shape[2]):
@@ -414,12 +419,23 @@ def gamma_analysis_3d(reference, verification, spacing, dose_crit, dist_crit, do
 
                 # Calcola gamma per ogni punto
                 gamma = np.sqrt((delta_dose / dose_crit_abs)**2 + (delta_dist / dist_crit)**2)
-                gamma_map[i, j, k] = np.min(gamma[valid_mask])  # Prendi il minimo solo sui punti validi     
+                min_value = np.min(gamma) # Prendi il minimo solo sui punti validi     
+                gamma_map[i, j, k] = min_value 
                 
+                min_index = np.argwhere(gamma == min_value)[0]
+
+                
+                #if delta_dist[tuple(min_index)] > 0: 
+                #   print(f'Spatial contribution is !=0')
+                #print(f'delta_dose[tuple(min_index)]: {delta_dose[tuple(min_index)]}')
+                #print(f'delta_dist[tuple(min_index)]: {delta_dist[tuple(min_index)]}')                
+                dose_contribution_map[i, j, k] = delta_dose[tuple(min_index)] / dose_crit_abs
+                spatial_contribution_map[i, j, k] = delta_dist[tuple(min_index)] / dist_crit
+        print('slice i/100, time: ', i, time.time()-start_time)
                      
 
     # Calcola la percentuale di punti conformi
     passing_rate = np.sum(gamma_map <= 1) / np.sum(valid_mask) * 100
 
-    return gamma_map, passing_rate
+    return gamma_map, passing_rate, dose_contribution_map, spatial_contribution_map
 

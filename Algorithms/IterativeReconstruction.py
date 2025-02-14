@@ -16,6 +16,9 @@ class IterativeReconstruction:
     def __init__(self):
         self._save_img_to_disk = 0
         self._output_file_name = ""
+        
+        #TEST
+        self._my_actual_image = None
 
     def SetExperimentalSetup(self, experimental_setup):
         """!@brief  
@@ -195,6 +198,7 @@ class IterativeReconstruction:
             self.SaveImageToDisk(self._output_file_name , iteration=i)
             end = time.time()
             print("iteration {0:d} => time: {1:.1f} s".format(i + 1, end - start))
+            self._my_actual_image = self._image
         print("Done")
         return self._image
 

@@ -37,6 +37,9 @@ def process_and_visualize(input_matrix, reconstructed_matrix, threshold, normali
     normalized_input = Analysis.preprocess_for_visualization(normalized_input)
     normalized_reconstructed = Analysis.preprocess_for_visualization(normalized_reconstructed)
 
+    #normalized_reconstructed = np.flip(normalized_reconstructed, axis=0)
+
+
     Analysis.check_signal_equality(normalized_input, normalized_reconstructed)
 
     # Calcolo differenza e rapporto relativo
@@ -79,7 +82,7 @@ def process_and_visualize(input_matrix, reconstructed_matrix, threshold, normali
         
         Analysis.plot_difference_histograms(difference, rel_diff_)
 
-        threshold = normalized_reconstructed.max() * threshold
+
         mask_10percent = normalized_reconstructed > threshold
         rel_diff[~mask_10percent] = np.nan 
         Visualize3dImageWithProfile(rel_diff, slice_axis = 0, profile_axis = 0, symmetric_colorbar=True, title=f"Rapporto Relativo dove reco > 10% {description}")
@@ -95,8 +98,8 @@ def process_and_visualize(input_matrix, reconstructed_matrix, threshold, normali
         ax.legend()
 
         fig, ax = plt.subplots(figsize=(8, 6))
-        ax.plot(np.linspace(-49.5, 49.5, 100),  normalized_input[12, :, 50], label = 'Reference')
-        ax.plot(np.linspace(-49.5, 49.5, 100),  normalized_reconstructed[12, :, 50], label = 'Reconstructed')
+        ax.plot(np.linspace(-49.5, 49.5, 100),  normalized_input[88, :, 50], label = 'Reference')
+        ax.plot(np.linspace(-49.5, 49.5, 100),  normalized_reconstructed[88, :, 50], label = 'Reconstructed')
         ax.set(xlabel='Profile [mm]', ylabel='Signal [a.u.]', title ='')
         ax.grid()
         ax.legend()        

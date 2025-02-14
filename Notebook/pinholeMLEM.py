@@ -12,6 +12,7 @@ import Misc.OutputDir as saveOutput
 from Algorithms.SinogramGenerator_3D_long_transv import SinogramGenerator_3D
 from Geometry.ExperimentalSetupCT_3D_long_transv import ExperimentalSetupCT_3D, Mode, DetectorShape
 from Algorithms.MLEM import MLEM
+from Algorithms.MAP import MAP
 from Misc.DataTypes import voxel_dtype
 
 
@@ -98,7 +99,7 @@ projections = np.concatenate((projections_t, projections_l))
 print('projections_t.shape, projectionsl.shape, projections.shape:, ', projections_t.shape, projections_l.shape, projections.shape)
 
 print('\n')
-algorithm="MLEM"
+algorithm="MAP"
 niter=ITERATIONS
 initial_value=1
 
@@ -115,9 +116,9 @@ output_manager.PlotThreeSlices(output_img.astype('float64'), savefig=True)
 
 
 if DO_PLOT == True:
-    Visualize3dImage(input_img, slice_axis=2,_cmap='gray') #This figure is not saved 
-    Visualize3dImage(output_img, slice_axis=2,_cmap='gray') #This figure is not saved 
+    Visualize3dImage(input_img.astype(np.float64), slice_axis=0,_cmap='gray') #This figure is not saved 
+    Visualize3dImage(output_img.astype(np.float64), slice_axis=0,_cmap='gray') #This figure is not saved 
     plt.show()
 
-output_manager.close()
+#output_manager.close()
 
