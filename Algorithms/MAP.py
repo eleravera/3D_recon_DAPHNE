@@ -1,9 +1,12 @@
 import numpy as np
+import os
 from Algorithms.IterativeReconstruction import IterativeReconstruction
 from scipy.optimize import curve_fit
 
 from Misc.Preview import Visualize3dImage
 from matplotlib import pyplot as plt
+
+LAMBDA = 8.75e+2 #TODO
 
 class MAP(IterativeReconstruction):
     """!@brief  
@@ -14,12 +17,14 @@ class MAP(IterativeReconstruction):
         super().__init__()
         self._name = "MAP"
         
-        #QUI CI METTO GLI ATTRIBUTI DI MAP, CHE AGGIUNGO IO.         
         self.plane_sums = None  # Attribute to store the sum of each plane along the axis 0 of the matrix (corresponding to the z-axis)
         self.centroids = None   #Attribute to store the centroids for each plane
         self.fit_params = None  # To store fit parameters as [(ax, bx), (ay, by)]
         self.derivative = None
         self.new_sensitivity = None
+        self._Ssum = None
+        
+        self.sensitivity_file = None #USed to save the system matrix and the derivatives 
         
     
     def PerfomSingleIteration(self):
@@ -35,61 +40,28 @@ class MAP(IterativeReconstruction):
         #  backprojection
         tmp = self.BackProjection(proj)
         
-        
+        #Calculates element for prior correction
         centroids = self._CalculateCentroids()
         fit_param = self._FitCentroids(p0=[(1, 1), (1, 1)])
-        #print(centroids, fit_param)
         self.derivative, x_terms, y_terms, z_i, der_min, der_max = self._CalculateDerivatives()
-        print(f'The deritivative.min() and derivative.max() are: {self.derivative.min():.3e} and {self.derivative.max():.3e}')
-        print("centroids shape:", centroids.shape) 
 
-        filename = "../Reconstruction/derivative_check.txt"
+        #if iteration <20 MLEM, else MAP
+        if self._iteration < 20:
+            self.new_sensitivity = np.zeros(self._S.shape)
+            nnull = self._S != 0
+            self.new_sensitivity[nnull] = 1 / self._S[nnull]
+        else: 
+            self._EvaluatePriorCorrection()
+            self.new_sensitivity = np.zeros(self._Ssum.shape)
+            nnull = self._Ssum != 0
+            self.new_sensitivity[nnull] = 1 / self._Ssum[nnull]
         
-        data = np.column_stack((centroids[:,0], centroids[:,1], x_terms, y_terms, z_i, der_min, der_max))
-        # Scrive in modalità appendendo al file
-        with open(filename, "a") as f:
-            f.write("#centroids, x_term1\tx_term2\ty_term\tz_i\tder_min\tder_max\n")  # Intestazione colonne
-            np.savetxt(f, data, fmt=["%.4f", "%.4f", "%.4f", "%.4f", "%d", "%.3e", "%.3e"], delimiter="\t")
-
-
-        #print('centroids.shape, x_terms.shape, y_terms.shape, z_i.shape', centroids.shape, x_terms.shape, y_terms.shape, z_i.shape)
-        #       
-        #self._EvaluatePriorCorrection()
-
+        self.save_derivative_matrix()
+        self.visualization_per_step()
+        self.print_some_output()
         
-        # apply sensitivity correction and update current estimate 
-        nnull = self._S != 0
-                
-        sensitivity = np.zeros(self._S.shape)
-        sensitivity[nnull] =  1 / (self._S[nnull]) #+self.derivative[nnull])
+        self._image = self._image * self.new_sensitivity * tmp   
         
-        #sensitivity_new = np.zeros(self._S.shape)
-        #sensitivity_new[nnull] =  1 / (self._S[nnull] + self.derivative[nnull])
-        # 
-        #new_denom = (self._S + self.derivative)
-        
-        #difference = sensitivity - sensitivity_new
-        #sum_ = self._S + self.derivative
-        #Visualize3dImage(sum_.astype(np.float64), slice_axis=0, symmetric_colorbar=False, title ='Sum')
-        #plt.figure()
-        #plt.hist(np.concatenate(np.concatenate(self._S.astype(np.float64))), bins = 100)
-        
-        #Visualize3dImage(self._S.astype(np.float64), slice_axis=0, symmetric_colorbar=False, title ='S')
-        #Visualize3dImage(self.derivative.astype(np.float64), slice_axis=0, symmetric_colorbar=True, title ='derivate')
-        #Visualize3dImage(new_denom.astype(np.float64), slice_axis=0, symmetric_colorbar=False, title ='new_denom')
-        
-        #plt.figure()
-        #plt.hist(np.concatenate(np.concatenate(new_denom.astype(np.float64))), bins = 100)
-        #plt.title('new denom')
-        
-        #plt.show()
-                
-        self._image = self._image * sensitivity * tmp        
-        
-        
-        
-
-
 
 
     def __EvaluateSensitivity(self):
@@ -97,19 +69,19 @@ class MAP(IterativeReconstruction):
              Backproject a vector filled with 1: the obtained image is often called
             sensitivity image
         """
+        #ATTENZIONE: sto richiamando sensitivity il denominatore
         self._S = self.BackProjection(np.ones(self.GetNumberOfProjections()))
-        nnull = self._S != 0
+        self.sensitivity_file = os.path.join(os.path.dirname(self._output_file_name), "sensitivity.npz") 
+        np.savez(self.sensitivity_file, system_matrix=self._S)
+        #print(f"File created: {self.sensitivity_file}, and System matrix saved")
         
-        
-        #self._S[nnull] = 1 / self._S[nnull]
+
 
     def EvaluateWeightingFactors(self):
         """!@brief
             Compute all the weighting factors needed for the update rule
         """
         self.__EvaluateSensitivity()
-        #np.savez('/home/eleonora/3D_recon_DAPHNE/Algorithms/sensitivity.npz', matrixname = self._S)
-        
 
         
 
@@ -127,17 +99,13 @@ class MAP(IterativeReconstruction):
             The axis 0 is selected because the distribution is supposed to be linear along this axis.
         """
         self._CalculatePlaneSums()  # Ensure plane sums are calculated first
-
         x_coords = np.arange(self._image.shape[2])  # X-axis coordinates
         y_coords = np.arange(self._image.shape[1])  # Y-axis coordinates
-
         # Compute centroids for each plane along axis 0
         self.centroids = np.array([
             (                
                 np.sum(x_coords * np.sum(self._image[i, :, :], axis=1)) / self.plane_sums[i], #centroid on y
                 np.sum(y_coords * np.sum(self._image[i, :, :], axis=0)) / self.plane_sums[i]  #centroid on x
-                
-            
             ) if self.plane_sums[i] > 0 else (np.nan, np.nan)  # Handle empty planes
             for i in range(self._image.shape[0])
         ])
@@ -215,16 +183,6 @@ class MAP(IterativeReconstruction):
             y_term = 2 * (self.centroids[i, 1] - z_coords[i] * self.fit_params[1][0] - self.fit_params[1][1]) * \
                      (y_coords - self.centroids[i, 1]) / self.plane_sums[i]
                                           
-            
-            # Now store the x_term and y_term across the 3D matrix
-            # The derivative in the x direction for each plane is spread across the x-dimension
-            # Likewise, the derivative in the y direction for each plane is spread across the y-dimension
-
-            # The terms depend on z, so we will broadcast the terms along the other axes
-            #derivative_matrix[i, :, :] = np.outer(y_term, x_term)  # Broadcasting over y and x dimensions
-            
-            
-            
             X, Y = np.meshgrid(x_term, y_term)
             
             derivative_matrix[i, :, : ] = X + Y 
@@ -235,7 +193,7 @@ class MAP(IterativeReconstruction):
             der_min.append((X + Y).min())
             der_max.append((X + Y).max())
             
-        derivative_matrix = derivative_matrix#/(np.pi**100)  #Because the normalization of the prior is pi^N
+        derivative_matrix = derivative_matrix
 
         x_terms = np.array(x_terms)
         y_terms = np.array(y_terms)
@@ -251,7 +209,35 @@ class MAP(IterativeReconstruction):
 
     def _EvaluatePriorCorrection(self):
         #put together all the contributions, in order to substitute this in the PerformSingleIteration function.
-        self.new_sensitivity = 1 / (1/self._S + self.derivative)
-
+        self._Ssum = self._S + self.derivative * LAMBDA
         return
 
+
+"""
+*******************************************************************************************************
+Some usefull functions for debugging
+*******************************************************************************************************
+"""
+
+    def save_derivative_matrix(self): 
+       #Save the derivatives
+       data = np.load(self.sensitivity_file, allow_pickle=True)
+       existing_data = {key: data[key] for key in data.files}      
+       key = f"derivative_it{self._iteration+1}"
+       existing_data[key] = self.derivative
+       np.savez(self.sensitivity_file, **existing_data)
+       #print(f"Matrix added to file: {self.sensitivity_file}")
+       return 
+       
+    def visualization_per_step(self):
+        if (self._iteration > 20):
+            Visualize3dImage(self.derivative.astype('float64'), slice_axis=0, symmetric_colorbar=False, title ='derivative')
+            Visualize3dImage(self._Ssum.astype('float64'), slice_axis=0, symmetric_colorbar=False, title ='_S + derivative * LAMBDA')
+            Visualize3dImage(self.new_sensitivity.astype('float64'), slice_axis=0, symmetric_colorbar=False, title ='new sensitivity')
+            plt.show()
+            
+            
+    def print_some_output(self):        
+        print(f'new_sensitivity.min = {self.new_sensitivity.min()}, new_sensitivity.max = {self.new_sensitivity.max()}')        
+        print(f'derivative.min = {self.derivative.min()}, derivative.max = {self.derivative.max()}')
+        
