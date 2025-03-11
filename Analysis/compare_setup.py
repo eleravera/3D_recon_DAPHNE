@@ -1,3 +1,5 @@
+#python3 -i compare_setup.py
+
 import sys
 sys.path.append("../")
 import argparse
@@ -153,199 +155,219 @@ def calculate_sad(pixels, pitch):
 
 
 ###################################################################################################################
+if __name__ == "__main__":
+
+    PLOT_ITER = True
+    PLOT_ITER_SAD = False
+    PIXELS_LIST = [500]
+    VIEWS_LIST = [4, 8]
+    ITER = 50
+    COMPARE_EDGE = False
+    INPUT_FILE = '../Data/SheppLogan3D.npz' #'../Data/cylindrical_phantom.npz' #'/home/eleonora/eFLASH_3D_Sim-build/Dose_Map_30mm/spettro_9MeV/doseDistribution.npz'
+
+    log_file_path = "/home/eleonora/3D_recon_DAPHNE/Reconstruction/log.txt"
 
 
-PLOT_ITER = True
-PLOT_ITER_SAD = False
-PIXELS_LIST = [200, 400, 500]
-VIEWS_LIST = [4, 8]
-ITER = 50
-COMPARE_EDGE = False
-INPUT_FILE = '/home/eleonora/eFLASH_3D_Sim-build/Dose_Map_30mm/spettro_9MeV/doseDistribution.npz'
-
-log_file_path = "/home/eleonora/3D_recon_DAPHNE/Reconstruction/log.txt"
 
 
+    last_5_percentages = []
+    last_10_percentages = []
+    last_spatial_res = []
+    last_diff_mean = []
+    last_diff_std_dev = []    
+    source_axis_distance = []
+    legend = []
 
 
-last_5_percentages = []
-last_10_percentages = []
-last_spatial_res = []
-last_diff_mean = []
-source_axis_distance = []
-legend = []
+    all_5_percentages = []
+    all_10_percentages = []
+    all_std_dev = []
+
+    for VIEWS in VIEWS_LIST:
+        for PIXEL in PIXELS_LIST: 
+
+            iterations, pitch, views, pixels, input_files, folder_path = read_log_file(log_file_path)
+
+            mask = (pixels == PIXEL) * (views == VIEWS) * (input_files == INPUT_FILE)
+            iterations = iterations[mask]
+            pitch = pitch[mask]
+            views = views[mask]
+            pixels = pixels[mask]
+            folder_path = folder_path[mask]
+            input_files = input_files[mask]
+            sad = calculate_sad(pixels, pitch)
+
+            statistics = []
+            
+            for folder in folder_path:
+                stats = read_output_statistics(folder)
+                if stats==None: 
+                    print(stats)
+                    continue
+                else:
+                    statistics.append(stats)
+
+            percentages_5 = [stats['5%_Percentage'][-1] for stats in statistics]
+            percentages_10 = [stats['10%_Percentage'][-1] for stats in statistics]
+            sp_res = [stats['Spatial_res'][-1] for stats in statistics]
+            diff_mean = [stats['Rel Diff Mean'][-1] for stats in statistics]
+            diff_std_dev = [stats['Rel Diff Std Dev'][-1] for stats in statistics]
 
 
-all_5_percentages = []
-all_10_percentages = []
+            last_5_percentages.append(np.array(percentages_5))
+            last_10_percentages.append(np.array(percentages_10))
+            last_spatial_res.append(np.array(sp_res))
+            last_diff_mean.append(np.array(diff_mean))
+            last_diff_std_dev.append(np.array(diff_std_dev))
+            source_axis_distance.append(sad)
+            legend.append(f'{PIXEL} pixels, {VIEWS} views')
+            
+            
+            all_5_percentages.append(np.array(stats['5%_Percentage']))
+            all_10_percentages.append(np.array(stats['10%_Percentage']))
+            all_std_dev.append(np.array(stats['Rel Diff Std Dev']))           
 
-for VIEWS in VIEWS_LIST:
-    for PIXEL in PIXELS_LIST: 
+            if PLOT_ITER_SAD: 
+                plot_vs_iteration(statistics, folder_path, "Rel Diff Mean", "Rel Diff Mean", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
+                plot_vs_iteration(statistics, folder_path, "5%_Percentage", "5% Percentage", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
+                plot_vs_iteration(statistics, folder_path, "10%_Percentage", "10% Percentage", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
+                plot_vs_iteration(statistics, folder_path, "Spatial_res", "Spatial Resolution", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
+                plot_vs_iteration(statistics, folder_path, "Rel Diff Std Dev", "Relative Difference Std Dev", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
 
-        iterations, pitch, views, pixels, input_files, folder_path = read_log_file(log_file_path)
 
-        mask = (pixels == PIXEL) * (views == VIEWS) * (input_files == INPUT_FILE)
-        iterations = iterations[mask]
-        pitch = pitch[mask]
-        views = views[mask]
-        pixels = pixels[mask]
-        folder_path = folder_path[mask]
-        input_files = input_files[mask]
-        sad = calculate_sad(pixels, pitch)
+                plot_last_metrics(pitch, percentages_10, 'Pitch [mm]', '10% Percentage', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
+                plot_last_metrics(pitch, sp_res, 'Pitch [mm]', 'Spatial resolution', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
+                plot_last_metrics(pitch, diff_mean, 'Pitch [mm]', '$\mu$ relative', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
+                
+                plot_last_metrics(sad, percentages_5, 'sad [mm]', '5% Percentage', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
+                plot_last_metrics(sad, percentages_10, 'sad [mm]', '10% Percentage', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
+                plot_last_metrics(sad, sp_res, 'sad [mm]', 'Spatial resolution', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
+                plot_last_metrics(sad, diff_mean, 'sad [mm]', '$\mu$ relative', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
+
+
+
+    if PLOT_ITER:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        for i in range(0, len(all_5_percentages)):
+            plt.plot(np.linspace(0,49, 50), all_5_percentages[i], label=legend[i])
+        plt.legend()
+        plt.grid()
+        plt.xlabel("Iteration")
+        plt.ylabel("5% Percentage")
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        for i in range(0, len(all_10_percentages)):
+            plt.plot(np.linspace(0,49, 50), all_10_percentages[i], label=legend[i])
+        plt.legend()
+        plt.grid()
+        plt.xlabel("Iteration")
+        plt.ylabel("10% Percentage")
+        
+        fig, ax = plt.subplots(figsize=(10, 6))
+        for i in range(0, len(all_std_dev)):
+            plt.plot(np.linspace(0,49, 50), all_std_dev[i], label=legend[i])
+        plt.legend()
+        plt.grid()
+        plt.xlabel("Iteration")
+        plt.ylabel("std dev relative difference")
+        plt.show()
+
+
+    fig_5, ax_5 = plt.subplots(figsize=(10, 6))
+    fig_10, ax_10 = plt.subplots(figsize=(10, 6))
+    fig_res, ax_res = plt.subplots(figsize=(10, 6))
+    fig_mu, ax_mu = plt.subplots(figsize=(10, 6))
+    fig_std, ax_std = plt.subplots(figsize=(10, 6))
+
+    for i in range(0, len(source_axis_distance)):
+        sorted_indices = np.argsort(source_axis_distance[i])
+        source_axis_distance[i] = source_axis_distance[i][sorted_indices]
+        last_5_percentages[i] = last_5_percentages[i][sorted_indices]
+        last_10_percentages[i] = last_10_percentages[i][sorted_indices]
+        last_spatial_res[i] = last_spatial_res[i][sorted_indices]        
+        last_diff_mean[i] = last_diff_mean[i][sorted_indices]        
+        last_diff_std_dev[i] = last_diff_std_dev[i][sorted_indices]    
+
+    for i in range(0, len(last_5_percentages)):
+        ax_5.plot(source_axis_distance[i], last_5_percentages[i], '-o', label = legend[i])
+        ax_10.plot(source_axis_distance[i], last_10_percentages[i], '-o', label = legend[i])    
+        ax_res.plot(source_axis_distance[i], last_spatial_res[i], '-o', label = legend[i])
+        ax_mu.plot(source_axis_distance[i], last_diff_mean[i], '-o', label = legend[i])
+        ax_std.plot(source_axis_distance[i], last_diff_std_dev[i], '-o', label = legend[i])
+        
+    ax_5.set(xlabel='sad [mm]', ylabel='5%', title='')
+    ax_5.legend()
+    ax_5.grid(True)
+
+    ax_10.set(xlabel='sad [mm]', ylabel='10%', title='')
+    ax_10.legend()
+    ax_10.grid(True)
+
+    ax_res.set(xlabel='sad [mm]', ylabel='sp resl', title='')
+    ax_res.legend()
+    ax_res.grid(True)
+
+    ax_mu.set(xlabel='sad [mm]', ylabel='mu', title='')
+    ax_mu.legend()
+    ax_mu.grid(True)
+    
+    ax_mu.set(xlabel='sad [mm]', ylabel='std', title='')
+    ax_mu.legend()
+    ax_mu.grid(True)
+
+
+
+
+
+    if COMPARE_EDGE == True: 
+        data = [
+            {"directory": "/2025-01-15_10-01-27", "sigma": 2},
+            {"directory": "/2025-01-15_18-50-34", "sigma": 4},
+            {"directory": "/2025-01-15_21-07-25", "sigma": 6},
+            {"directory": "/2025-01-15_23-28-45", "sigma": 8}
+        ]
 
         statistics = []
-        for folder in folder_path:
-            stats = read_output_statistics(folder)
-            if stats==None: 
-                print(stats)
-                continue
-            else:
-                statistics.append(stats)
+        sigma = []
+        for entry in data:  
+            folder = os.path.dirname(log_file_path) + entry["directory"]
+            s = entry["sigma"]
+            print(f"Processing folder: {folder}, with sigma: {s}")
+            stats = read_output_statistics(folder) 
+            statistics.append(stats)
+            sigma.append(s)
 
 
         percentages_5 = [stats['5%_Percentage'][-1] for stats in statistics]
         percentages_10 = [stats['10%_Percentage'][-1] for stats in statistics]
         sp_res = [stats['Spatial_res'][-1] for stats in statistics]
         diff_mean = [stats['Rel Diff Mean'][-1] for stats in statistics]
-
-
-        last_5_percentages.append(np.array(percentages_5))
-        last_10_percentages.append(np.array(percentages_10))
-        last_spatial_res.append(np.array(sp_res))
-        last_diff_mean.append(np.array(diff_mean))
-        source_axis_distance.append(sad)
-        legend.append(f'{PIXEL} pixels, {VIEWS} views')
         
         
-        all_5_percentages.append(np.array(stats['5%_Percentage']))
-        all_10_percentages.append(np.array(stats['10%_Percentage']))
+        fig_5, ax_5 = plt.subplots(figsize=(10, 6))
+        fig_10, ax_10 = plt.subplots(figsize=(10, 6))
+        fig_res, ax_res = plt.subplots(figsize=(10, 6))
+        fig_mu, ax_mu = plt.subplots(figsize=(10, 6))
+
+        ax_5.plot(sigma, percentages_5, '-o')
+        ax_5.set(xlabel='sigma', ylabel='5%', title='')
+        ax_5.grid(True)
+
+        ax_10.plot(sigma, percentages_10, '-o')
+        ax_10.set(xlabel='sigma', ylabel='10%', title='')
+        ax_10.grid(True)
+
+        ax_res.plot(sigma, sp_res, '-o')
+        ax_res.set(xlabel='sigma', ylabel='sp resl', title='')
+        ax_res.grid(True)
+
+        ax_mu.plot(sigma, diff_mean, '-o')
+        ax_mu.set(xlabel='sigma', ylabel='mu', title='')
+        ax_mu.grid(True)
+        plt.show()
+        
         
 
-        if PLOT_ITER_SAD: 
-            plot_vs_iteration(statistics, folder_path, "Rel Diff Mean", "Rel Diff Mean", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
-            plot_vs_iteration(statistics, folder_path, "5%_Percentage", "5% Percentage", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
-            plot_vs_iteration(statistics, folder_path, "10%_Percentage", "10% Percentage", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
-            plot_vs_iteration(statistics, folder_path, "Spatial_res", "Spatial Resolution", calculate_sad(pixels, pitch), 'sad [mm] ', f'{PIXEL} pixels, {VIEWS} views')
-
-            plot_last_metrics(pitch, percentages_10, 'Pitch [mm]', '10% Percentage', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
-            plot_last_metrics(pitch, sp_res, 'Pitch [mm]', 'Spatial resolution', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
-            plot_last_metrics(pitch, diff_mean, 'Pitch [mm]', '$\mu$ relative', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
-            
-            plot_last_metrics(sad, percentages_5, 'sad [mm]', '5% Percentage', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
-            plot_last_metrics(sad, percentages_10, 'sad [mm]', '10% Percentage', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
-            plot_last_metrics(sad, sp_res, 'sad [mm]', 'Spatial resolution', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
-            plot_last_metrics(sad, diff_mean, 'sad [mm]', '$\mu$ relative', f'{PIXEL} pixels, {VIEWS} views, {ITER} Iter')
 
 
-
-if PLOT_ITER:
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for i in range(0, len(all_5_percentages)):
-        plt.plot(np.linspace(0,49, 50), all_5_percentages[i], label=legend[i])
-    plt.legend()
-    plt.grid()
-    plt.xlabel("Iteration")
-    plt.ylabel("5% Percentage")
-    plt.show()
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for i in range(0, len(all_10_percentages)):
-        plt.plot(np.linspace(0,49, 50), all_10_percentages[i], label=legend[i])
-    plt.legend()
-    plt.grid()
-    plt.xlabel("Iteration")
-    plt.ylabel("10% Percentage")
-    plt.show()
-
-
-fig_5, ax_5 = plt.subplots(figsize=(10, 6))
-fig_10, ax_10 = plt.subplots(figsize=(10, 6))
-fig_res, ax_res = plt.subplots(figsize=(10, 6))
-fig_mu, ax_mu = plt.subplots(figsize=(10, 6))
-
-for i in range(0, len(source_axis_distance)):
-    sorted_indices = np.argsort(source_axis_distance[i])
-    source_axis_distance[i] = source_axis_distance[i][sorted_indices]
-    last_5_percentages[i] = last_5_percentages[i][sorted_indices]
-    last_10_percentages[i] = last_10_percentages[i][sorted_indices]
-    last_spatial_res[i] = last_spatial_res[i][sorted_indices]        
-    last_diff_mean[i] = last_diff_mean[i][sorted_indices]        
-    
-
-for i in range(0, len(last_5_percentages)):
-    ax_5.plot(source_axis_distance[i], last_5_percentages[i], '-o', label = legend[i])
-    ax_10.plot(source_axis_distance[i], last_10_percentages[i], '-o', label = legend[i])    
-    ax_res.plot(source_axis_distance[i], last_spatial_res[i], '-o', label = legend[i])
-    ax_mu.plot(source_axis_distance[i], last_diff_mean[i], '-o', label = legend[i])
-ax_5.set(xlabel='sad [mm]', ylabel='5%', title='')
-ax_5.legend()
-ax_5.grid(True)
-
-ax_10.set(xlabel='sad [mm]', ylabel='10%', title='')
-ax_10.legend()
-ax_10.grid(True)
-
-ax_res.set(xlabel='sad [mm]', ylabel='sp resl', title='')
-ax_res.legend()
-ax_res.grid(True)
-
-ax_mu.set(xlabel='sad [mm]', ylabel='mu', title='')
-ax_mu.legend()
-ax_mu.grid(True)
-
-
-
-
-
-if COMPARE_EDGE == True: 
-    data = [
-        {"directory": "/2025-01-15_10-01-27", "sigma": 2},
-        {"directory": "/2025-01-15_18-50-34", "sigma": 4},
-        {"directory": "/2025-01-15_21-07-25", "sigma": 6},
-        {"directory": "/2025-01-15_23-28-45", "sigma": 8}
-    ]
-
-    statistics = []
-    sigma = []
-    for entry in data:  
-        folder = os.path.dirname(log_file_path) + entry["directory"]
-        s = entry["sigma"]
-        print(f"Processing folder: {folder}, with sigma: {s}")
-        stats = read_output_statistics(folder) 
-        statistics.append(stats)
-        sigma.append(s)
-
-
-    percentages_5 = [stats['5%_Percentage'][-1] for stats in statistics]
-    percentages_10 = [stats['10%_Percentage'][-1] for stats in statistics]
-    sp_res = [stats['Spatial_res'][-1] for stats in statistics]
-    diff_mean = [stats['Rel Diff Mean'][-1] for stats in statistics]
-    
-    
-    fig_5, ax_5 = plt.subplots(figsize=(10, 6))
-    fig_10, ax_10 = plt.subplots(figsize=(10, 6))
-    fig_res, ax_res = plt.subplots(figsize=(10, 6))
-    fig_mu, ax_mu = plt.subplots(figsize=(10, 6))
-
-    ax_5.plot(sigma, percentages_5, '-o')
-    ax_5.set(xlabel='sigma', ylabel='5%', title='')
-    ax_5.grid(True)
-
-    ax_10.plot(sigma, percentages_10, '-o')
-    ax_10.set(xlabel='sigma', ylabel='10%', title='')
-    ax_10.grid(True)
-
-    ax_res.plot(sigma, sp_res, '-o')
-    ax_res.set(xlabel='sigma', ylabel='sp resl', title='')
-    ax_res.grid(True)
-
-    ax_mu.plot(sigma, diff_mean, '-o')
-    ax_mu.set(xlabel='sigma', ylabel='mu', title='')
-    ax_mu.grid(True)
-    plt.show()
-    
-    
-
-
-
-plt.show()    
+    plt.show()    

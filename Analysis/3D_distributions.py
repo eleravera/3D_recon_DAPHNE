@@ -64,12 +64,15 @@ def process_and_visualize(input_matrix, reconstructed_matrix, threshold, normali
     
     # Visualizzazione (se do_plot è True)
     if do_plot:
-        Visualize3dImage(normalized_input, slice_axis=0, title=f"Input {description}")
-        Visualize3dImage(normalized_reconstructed, slice_axis=0, title=f"Ricostruita {description}")
-        Visualize3dImageWithProfile(normalized_reconstructed, slice_axis=2, profile_axis=1, title='')
-        Visualize3dImageWithProfile(difference, slice_axis=0, profile_axis=0, symmetric_colorbar=True, title=f"Differenza {description}")
-        Visualize3dImageWithProfile(difference, slice_axis=2, profile_axis=0, symmetric_colorbar=True, title=f"Differenza {description}")
-        Visualize3dImageWithProfile(rel_diff, slice_axis=0, profile_axis=0, symmetric_colorbar=True, title=f"Rapporto Relativo {description}")
+        Visualize3dImageWithProfile(normalized_input, slice_axis=0, profile_axis=1, title=f"Input {description}")
+        Visualize3dImageWithProfile(normalized_reconstructed, slice_axis=0, profile_axis=1, title=f"Reco {description}")
+
+        #Visualize3dImageWithProfile(normalized_reconstructed, slice_axis=2, profile_axis=1, title=f"Input {description}")
+        #Visualize3dImageWithProfile(normalized_reconstructed, slice_axis=2, profile_axis=1, title=f"Reco {description}")
+
+        Visualize3dImageWithProfile(difference, slice_axis=0, profile_axis=1, symmetric_colorbar=True, title=f"Difference {description}")
+        #Visualize3dImageWithProfile(difference, slice_axis=2, profile_axis=0, symmetric_colorbar=True, title=f"Difference {description}")
+        """Visualize3dImageWithProfile(rel_diff, slice_axis=0, profile_axis=0, symmetric_colorbar=True, title=f"Rapporto Relativo {description}")
         Visualize3dImageWithProfile(rel_diff, slice_axis=2, profile_axis=0, symmetric_colorbar=True, title=f"Rapporto Relativo {description}")
 
         Analysis.plot_signal_histograms(normalized_input, normalized_reconstructed, bins=100, labels=("input", "recon"), title="Signal Histogram", colors=("blue", "orange"))
@@ -102,7 +105,7 @@ def process_and_visualize(input_matrix, reconstructed_matrix, threshold, normali
         ax.plot(np.linspace(-49.5, 49.5, 100),  normalized_reconstructed[88, :, 50], label = 'Reconstructed')
         ax.set(xlabel='Profile [mm]', ylabel='Signal [a.u.]', title ='')
         ax.grid()
-        ax.legend()        
+        ax.legend()        """
 
         
         
@@ -120,9 +123,11 @@ if __name__ == "__main__":
     if args.sigma is not None: 
         input_matrix = gaussian_filter(input_matrix, sigma = args.sigma/6, order = 0)
 
+
     latest_recon_file = os.path.join(args.recon_dir, 'reco.npz') if os.path.isfile(os.path.join(args.recon_dir, 'reco.npz')) else None
     reconstructed_matrix = Analysis.load_highest_iteration_matrix(latest_recon_file).astype(np.float64)
-        
+    
+    #reconstructed_matrix = np.load('../Reconstruction/2025-01-14_13-57-30/reco.npz')['iter10'].astype(np.float64)       
     _ = process_and_visualize(input_matrix, reconstructed_matrix, threshold=0.1, normalization_type='global', description="")
     
 

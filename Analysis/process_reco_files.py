@@ -6,6 +6,7 @@ import argparse
 import os
 import numpy as np
 import time 
+from matplotlib import pyplot as plt
 from scipy.ndimage import gaussian_filter
 import Analysis.AnalyisiFunctions as Analysis
 
@@ -51,6 +52,20 @@ def process_data(input_matrix, reconstructed_matrix, normalization_type='slice')
     stats_range_5 = Analysis.range_statistics(rel_diff_[mask], -0.05, 0.05)
     stats_range_10 = Analysis.range_statistics(rel_diff_[mask], -0.1, 0.1)
 
+    #Contrasto
+    mask =  normalized_reconstructed >  0.1 * normalized_reconstructed.max()
+    contrast = Analysis.calculate_contrast(normalized_input, normalized_reconstructed)
+    mean_constrast = np.mean(contrast[mask])
+    std_constrast = np.std(contrast[mask])
+    
+    plt.figure()
+    bins = np.linspace(np.nanmin(contrast), np.nanmax(contrast), 100)
+    plt.hist(np.concatenate(np.concatenate(contrast)), bins = bins, alpha = 0.5, label='no mask')
+    plt.hist(contrast[mask], bins = bins , alpha = 0.5, label='contrast')
+    plt.legend()
+    plt.grid()
+    
+
     # Output
     results = {
         "difference_stats": {
@@ -73,6 +88,10 @@ def process_data(input_matrix, reconstructed_matrix, normalization_type='slice')
                 "percentage": stats_range_10[2],
             },
         },
+        "constrast_stats": {
+            "mean" :  mean_constrast, 
+            "std_dev" : std_constrast,
+        }
     }
 
     return results
@@ -100,7 +119,7 @@ if __name__ == "__main__":
     output_file = args.recon_dir + "output_statistics.txt"
     
     with open(output_file, 'w') as file:
-        file.write("#Iteration \tDiff Mean \tDiff Std Dev \tRel Diff Mean \tRel Diff Std Dev\t5%_Cnt\t5%_Tot\t5%_Percentage\t10%_Cnt\t10%_Tot\t10%_Percentage\tSpatial_res\n")
+        file.write("#Iteration \tDiff Mean \tDiff Std Dev \tRel Diff Mean \tRel Diff Std Dev\t5%_Cnt\t5%_Tot\t5%_Percentage\t10%_Cnt\t10%_Tot\t10%_Percentage\tSpatial_res\tMean_contrast\tStd_contrast\n")
     
     while True:
         try:
@@ -132,6 +151,8 @@ if __name__ == "__main__":
             relative_difference_stats = results["relative_difference_stats"]
             range_stats_5 = results["range_statistics"]["5_percent"]
             range_stats_10 = results["range_statistics"]["10_percent"]
+            contrast_stats = results["constrast_stats"]
+            
                     
             with open(output_file, 'a') as file:
                 # Scrivi i risultati nel file
@@ -140,8 +161,7 @@ if __name__ == "__main__":
                            f"{relative_difference_stats['mean']:.2e}\t\t{relative_difference_stats['std_dev']:.2e}\t\t"
                            f"{range_stats_5['count']}\t\t{range_stats_5['total']}\t\t{range_stats_5['percentage']:.2f}\t\t"
                            f"{range_stats_10['count']}\t\t{range_stats_10['total']}\t\t{range_stats_10['percentage']:.2f}\t"
-                           f"{spatial_resolution:.2f}\n")
-                    
+                           f"{spatial_resolution:.2f}\t\t{contrast_stats['mean']:.2e}\t\t{contrast_stats['std_dev']:.2e}\n")                    
             iteration_number += 1
 
         except KeyError:
@@ -169,7 +189,7 @@ if __name__ == "__main__":
         gamma_map, passing_rate, dose_contribution, space_contribution = Analysis.gamma_analysis_3d(input_matrix, reconstructed_matrix, spacing, dose_crit=criteria[0], dist_crit=criteria[1], dose_threshold=criteria[2])
         print("Percentuale di punti conformi:", passing_rate, "%")
 
-        output_file = args.recon_dir + 'gamma_analysis.npz'   
+        output_file = args.recon_dir + 'gamma_analysis_new_dose_criteria.npz'   
         Analysis.save_matrix_to_npz(output_file, gamma_map, str(criteria))
         Analysis.save_matrix_to_npz(output_file, dose_contribution, f'dose_contribution_{criteria}')
         Analysis.save_matrix_to_npz(output_file, space_contribution, f'space_contribution_{criteria}')

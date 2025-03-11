@@ -80,7 +80,7 @@ def Visualize3dImage(img, slice_axis=2, _cmap='gray', symmetric_colorbar=False, 
     
     
     
-def Visualize3dImageWithProfile(img, slice_axis=2, profile_axis=0, _cmap='gray', symmetric_colorbar=False, title=''):
+def Visualize3dImageWithProfile(img, slice_axis=2, profile_axis=0, _cmap='viridis', symmetric_colorbar=False, title=''):
     """!@brief Display a 3D ndarray with a slider to move along the third dimension.
             Extra keyword arguments are passed to imshow
             @param img: 3D image array

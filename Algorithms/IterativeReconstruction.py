@@ -12,10 +12,11 @@ class IterativeReconstruction:
     """!@brief
          Implements all the basic operations needed by iterative reconstruction algorithms.
     """
-    
     def __init__(self):
         self._save_img_to_disk = 0
         self._output_file_name = ""
+        self._iteration = None
+
         
         #TEST
         self._my_actual_image = None
@@ -192,6 +193,7 @@ class IterativeReconstruction:
         # this method must be reimplemented in the base class
         self.EvaluateWeightingFactors()
         for i in range(self._niter):
+            self._iteration = i
             start = time.time()
             # this method must be reimplemented in the base class
             self.PerfomSingleIteration()

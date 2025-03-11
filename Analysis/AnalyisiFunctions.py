@@ -26,6 +26,7 @@ def load_highest_iteration_matrix(recon_file):
         iter_keys.sort(key=lambda k: int(k[4:]), reverse=True)
         highest_iter_key = iter_keys[0]
         matrix = data[highest_iter_key]
+        print('I am opening ...  ', highest_iter_key)
         return matrix
 
 def load_specific_iteration_matrix(recon_file, iteration_number):
@@ -356,86 +357,83 @@ def range_statistics(matrix, lower_bound, upper_bound):
     return count_in_range, total_events, percentage
 
 
+def calculate_contrast(input_matrix, reconstructed_matrix):
+    """ """
+    contrast = (input_matrix-reconstructed_matrix)/(input_matrix + reconstructed_matrix) * 200
+    return contrast
 
 
-def gamma_analysis_3d(reference, verification, spacing, dose_crit, dist_crit, dose_threshold):
+
+
+
+def gamma_analysis_3d(reference, evaluated, spacing, dose_crit, dist_crit, dose_threshold=None):
     """
     Implementazione della gamma analysis per distribuzioni 3D.
     
     Parameters:
     - reference: matrice 3D della dose di riferimento.
-    - verification: matrice 3D della dose da verificare.
+    - evaluated: matrice 3D della dose da verificare.
     - spacing: dimensione del voxel (es. [dx, dy, dz] in mm).
     - dose_crit: criterio di dose (es. 3% della dose massima).
     - dist_crit: criterio di distanza (es. 3 mm).
-    - dose_threshold: soglia di dose come frazione (es. 0.10 per 10% della dose massima).
+    - dose_threshold: soglia di dose come frazione opzionale (es. 0.10 per 10% della dose massima). Se None, la soglia non viene applicata.
     
     Returns:
     - gamma_map: mappa 3D dell'indice gamma.
     - passing_rate: percentuale di punti conformi (\( \gamma \leq 1 \)).
+    - dose_contribution_map: mappa 3D del contributo di dose.
+    - spatial_contribution_map: mappa 3D del contributo spaziale.
     """
     # Calcolo dei parametri
-    max_dose = np.max(reference)
-    dose_threshold *= max_dose
-    dose_crit_abs = dose_crit * max_dose / 100
+    max_dose_ref = np.max(reference)
+    max_dose_eval = np.max(evaluated)
+    if not np.isclose(max_dose_ref, max_dose_eval, rtol=0.1):
+        print("Attenzione: il massimo della dose di riferimento e di verifica differiscono significativamente.")
+    
+    #dose_crit_abs = dose_crit * max_dose_ref / 100
+    dose_crit_abs = reference * dose_crit / 100
 
-    # Crea una griglia di coordinate per la distribuzione
+    if dose_threshold is not None:
+        dose_threshold *= max_dose_ref
+    
+    # Creazione della griglia di coordinate
     x = np.arange(reference.shape[0]) * spacing[0]
     y = np.arange(reference.shape[1]) * spacing[1]
     z = np.arange(reference.shape[2]) * spacing[2]
     xv, yv, zv = np.meshgrid(x, y, z, indexing='ij')
-
-    # Esclude i punti sotto la soglia
-    mask_reference = reference >= dose_threshold
-    mask_verification = verification >= dose_threshold
-    valid_mask = mask_verification  # Maschera per punti validi
     
-    #sum_valid_mask= np.sum(valid_mask)
-    #print('THE SUM OF VALID MASK IS: ', sum_valid_mask)
-
-    # Inizializza la mappa gamma
-    gamma_map = np.full(verification.shape, np.inf)
+    # Inizializzazione delle mappe
+    gamma_map = np.full(evaluated.shape, np.inf)
+    dose_contribution_map = np.full(evaluated.shape, np.inf)
+    spatial_contribution_map = np.full(evaluated.shape, np.inf)
     
-    dose_contribution_map = np.full(verification.shape, np.inf)
-    spatial_contribution_map = np.full(verification.shape, np.inf)    
-    
-    # Itera sui punti di verifica per mantenere la logica della funzione originale
-    for i in range(verification.shape[0]):
+    # Iterazione sui punti di verifica
+    for i in range(evaluated.shape[0]):
         start_time = time.time()
-        
-        for j in range(verification.shape[1]):
-            for k in range(verification.shape[2]):
-                # Esclude i punti sotto la soglia
-                if reference[i, j, k] < dose_threshold or verification[i, j, k] < dose_threshold:
+        for j in range(evaluated.shape[1]):
+            for k in range(evaluated.shape[2]):
+                # Se è presente una soglia, escludi i punti sotto tale valore
+                if dose_threshold is not None and (reference[i, j, k] < dose_threshold or evaluated[i, j, k] < dose_threshold):
                     continue
-
-                # Differenza di dose e distanza
-                delta_dose = np.abs(reference - verification[i, j, k])
-                delta_x = xv - xv[i, j, k]
-                delta_y = yv - yv[i, j, k]
-                delta_z = zv - zv[i, j, k]
-                delta_dist = np.sqrt(delta_x**2 + delta_y**2 + delta_z**2)
-
-
-                # Calcola gamma per ogni punto
+                
+                # Calcolo delle differenze di dose e distanza
+                delta_dose = np.abs(reference - evaluated[i, j, k])
+                delta_dist = np.sqrt((xv - xv[i, j, k])**2 + (yv - yv[i, j, k])**2 + (zv - zv[i, j, k])**2)
+                
+                # Calcolo dell'indice gamma
                 gamma = np.sqrt((delta_dose / dose_crit_abs)**2 + (delta_dist / dist_crit)**2)
-                min_value = np.min(gamma) # Prendi il minimo solo sui punti validi     
-                gamma_map[i, j, k] = min_value 
+                min_value = np.min(gamma)
+                gamma_map[i, j, k] = min_value
                 
-                min_index = np.argwhere(gamma == min_value)[0]
-
-                
-                #if delta_dist[tuple(min_index)] > 0: 
-                #   print(f'Spatial contribution is !=0')
-                #print(f'delta_dose[tuple(min_index)]: {delta_dose[tuple(min_index)]}')
-                #print(f'delta_dist[tuple(min_index)]: {delta_dist[tuple(min_index)]}')                
-                dose_contribution_map[i, j, k] = delta_dose[tuple(min_index)] / dose_crit_abs
-                spatial_contribution_map[i, j, k] = delta_dist[tuple(min_index)] / dist_crit
-        print('slice i/100, time: ', i, time.time()-start_time)
-                     
-
-    # Calcola la percentuale di punti conformi
-    passing_rate = np.sum(gamma_map <= 1) / np.sum(valid_mask) * 100
-
+                # Identificazione del contributo minimo
+                min_index = np.unravel_index(np.argmin(gamma), gamma.shape)
+                dose_contribution_map[i, j, k] = (delta_dose / dose_crit_abs)[min_index]
+                spatial_contribution_map[i, j, k] = delta_dist[min_index] / dist_crit
+        
+        print(f'Slice {i}/{evaluated.shape[0]}, tempo: {time.time() - start_time:.2f}s')
+    
+    # Calcolo della percentuale di punti conformi
+    passing_rate = np.mean(gamma_map <= 1) * 100
+    
     return gamma_map, passing_rate, dose_contribution_map, spatial_contribution_map
 

@@ -99,7 +99,7 @@ projections = np.concatenate((projections_t, projections_l))
 print('projections_t.shape, projectionsl.shape, projections.shape:, ', projections_t.shape, projections_l.shape, projections.shape)
 
 print('\n')
-algorithm="MAP"
+algorithm="MLEM"
 niter=ITERATIONS
 initial_value=1
 

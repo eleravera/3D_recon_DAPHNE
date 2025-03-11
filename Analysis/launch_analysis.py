@@ -7,17 +7,14 @@ import time
 #To do the gamma analisi
 
 configurations = [
-
-{"directory": "2025-01-29_12-12-05/", "criteria": [1.0, 1.0, 0.1]},
-#{"directory": "2025-01-29_12-12-05/", "criteria": [3.0, 3.0, 0.03]},
-#{"directory": "2025-01-29_12-12-05/", "criteria": [2.0, 2.0, 0.02]},
+#{"directory": "2025-01-30_04-29-08/", "criteria": [3.0, 3.0, 0.0]} #doing
+{"directory": "2025-03-07_15-37-12/", "criteria": [3.0, 3.0, 0.0]},
+{"directory": "2025-03-07_13-21-04/", "criteria": [3.0, 3.0, 0.0]}
 ] 
 
 
-
-
 path_to_search = "/home/eleonora/3D_recon_DAPHNE/Reconstruction/"
-input_file = "/home/eleonora/3D_recon_DAPHNE/Data/doseDistribution_flip.npz" 
+input_file = "/home/eleonora/3D_recon_DAPHNE/Data/SheppLogan3D.npz"  # /home/eleonora/3D_recon_DAPHNE/Data/doseDistribution_flip.npz
 
 for config in configurations:
     # Separiamo i criteri in singoli argomenti
@@ -38,16 +35,16 @@ for config in configurations:
 
 ###########################################
 #Only for output file     
-"""
-   
+
+"""   
 path_to_search = "/home/eleonora/3D_recon_DAPHNE/Reconstruction/"
 
 #directories = [d for d in os.listdir(path_to_search) if os.path.isdir(os.path.join(path_to_search, d))]
 
-directories = ['2025-01-21_09-53-49', '2025-01-21_15-42-55', '2025-01-23_13-15-31', '2025-01-23_14-17-15', '2025-01-23_17-44-21', '2025-01-23_19-18-25']
+directories = ['2024-12-20_11-22-47', '2024-12-20_12-01-39', '2024-12-21_12-43-27', '2024-12-21_14-57-21', '2024-12-21_17-44-43', '2024-12-21_21-01-11', '2025-01-04_12-59-04', '2025-01-04_16-37-48', '2025-01-04_20-17-09', '2025-01-05_00-34-48', '2025-01-05_05-22-16', '2025-01-07_18-44-49', '2025-01-08_00-42-46', '2025-01-11_00-12-31', '2025-01-11_03-59-48', '2025-01-11_04-38-54', '2025-01-11_04-59-18', '2025-01-11_05-22-05', '2025-01-11_06-31-38', '2025-01-11_08-04-39', '2025-01-11_09-46-29', '2025-01-11_11-38-31', '2025-01-13_10-30-31', '2025-01-13_16-50-40', '2025-01-13_19-11-12', '2025-01-13_21-55-32', '2025-01-14_01-06-20', '2025-01-14_04-32-26', '2025-01-14_13-35-29', '2025-01-14_13-57-30', '2025-01-14_14-37-58', '2025-01-14_16-00-43', '2025-01-14_18-30-29', '2025-01-14_20-16-04', '2024-12-20_12-50-58', '2024-12-21_10-12-42', '2024-12-21_11-00-27', '2024-12-21_11-50-31']#gli ultimi quattro sono quelli con pitch >1
 
 
-input_file = "/home/eleonora/eFLASH_3D_Sim-build/Dose_Map_30mm/spettro_9MeV/doseDistribution.npz"  # "../Data/cylindrical_phantom.npz"
+input_file = "/home/eleonora/3D_recon_DAPHNE/Data/cylindrical_phantom.npz" 
 
 for dir in directories:
     # Separiamo i criteri in singoli argomenti
@@ -60,9 +57,10 @@ for dir in directories:
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"Error executing command: {e}")"""
-
-
+        print(f"Error executing command: {e}")
+        
+"""        
+        
 
 
 #per quelli con smoothing
